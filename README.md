@@ -34,13 +34,9 @@ npm run dev
 
 ## Deploy to GitHub Pages
 
-This follows [gitname/react-gh-pages](https://github.com/gitname/react-gh-pages), with Vite instead of the deprecated create-react-app:
+**Automatic (recommended):** `.github/workflows/deploy.yml` builds and publishes the site on every push to `main` (it can also be started by hand from the Actions tab → *Deploy to GitHub Pages* → *Run workflow*).
+One-time setup: **GitHub → Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
-- `package.json` has `"homepage": "https://tomkaXX.github.io/Energy2035"` and the `predeploy`/`deploy` scripts (`gh-pages -d dist`, because Vite builds to `dist/` rather than `build/`).
-- `vite.config.js` sets `base: '/Energy2035/'` so asset paths work on the project site.
+**Manual alternative** (as in [gitname/react-gh-pages](https://github.com/gitname/react-gh-pages), with Vite instead of create-react-app): `npm run deploy` pushes `dist/` to the `gh-pages` branch; then set Pages source to *Deploy from a branch* → `gh-pages` / `(root)`.
 
-```bash
-npm run deploy
-```
-
-Then, in **GitHub → Settings → Pages**, set the source to **Deploy from a branch** with branch `gh-pages` and folder `/ (root)`.
+`vite.config.js` sets `base: '/Energy2035/'` so asset paths work on the project site https://tomkaXX.github.io/Energy2035/.
