@@ -1,0 +1,185 @@
+# 2035 scenarios for the Swiss hourly PFC (from "ECube Challenge PFC 2035.xlsx", sheet "Defined Model").
+#
+# How to read the numbers
+#   * A historical "weather year" (hourly CH + DE/FR/IT fundamentals) is rescaled to 2035 with these
+#     parameters, then fed to the trained model. Every value is an ASSUMPTION — edit freely.
+#   * *_twh  = annual energy in Switzerland in 2035.
+#   * *_factor = multiplier on the historical reference-year series (1.0 = unchanged).
+#   * add_*_twh = extra demand on top of the reference year (electrification etc.).
+#
+# Anchors used for the defaults (check & update):
+#   * Energy Act (EnG) Art. 2: 35 TWh non-hydro renewables and 37.9 TWh hydro by 2035.
+#   * Swiss PV: ~9-10 GW installed end of 2025 (Swissolar), +1.3-1.8 GW/yr recently.
+#   * Nuclear: Beznau 1+2 (~0.73 GW) shut down by 2033 (Axpo); Gösgen (1.01 GW) + Leibstadt (1.23 GW) remain = 2.24 GW.
+#   * Neighbour factors are relative to ~2024/25 capacity (DE/FR/IT PV & wind expansion plans).
+
+defaults: &defaults
+  ch:
+    population_growth: 0.07        # vs reference year (BFS reference scenario, ~+0.7 %/yr)
+    efficiency_gain: 0.05          # demand reduction per unit of activity
+    add_ev_twh: 3.0                # electric vehicles
+    ev_smart_share: 0.3            # share of EV charging shifted to midday (PV hours)
+    add_heatpump_twh: 2.5          # replacement of fossil heating (winter-weighted)
+    heating_peak_factor: 1.0       # >1 = colder winters (sharper winter peak)
+    add_cooling_twh: 0.3           # air-conditioning (summer afternoons)
+    add_datacenter_twh: 1.5        # flat baseload
+    add_industry_twh: 0.0
+    pv_twh: 21.0
+    wind_twh: 0.6
+    nuclear_gw: 2.24
+    nuclear_availability_factor: 1.0   # 1.0 = availability of the reference year
+    hydro_ror_factor: 1.0          # run-of-river energy multiplier
+    summer_drought_factor: 1.0     # extra multiplier on Jul-Sep run-of-river (<1 = dry summers)
+    battery_gw: 1.0
+    battery_hours: 2.0
+    battery_efficiency: 0.88
+    dsm_gw: 0.3                    # demand response / flexible industry (intraday shifting, 2 h)
+    curtailment_floor_eur: -20     # PV injection management: PV curtails below this price (null = off)
+  neighbours:
+    de_solar_factor: 1.8
+    de_wind_factor: 1.5
+    de_load_factor: 1.10
+    fr_nuclear_factor: 1.0
+    fr_solar_factor: 2.0
+    fr_wind_factor: 1.6
+    fr_load_factor: 1.05
+    it_solar_factor: 1.8
+    it_wind_factor: 1.4
+    it_load_factor: 1.05
+    de_battery_gw: 25              # NEW storage vs today (large + home batteries)
+    fr_battery_gw: 5
+    it_battery_gw: 12
+    battery_hours: 2.0
+  market:
+    gas_eur_mwh: 30                # TTF
+    co2_eur_t: 100                 # EU ETS
+    ntc_factor: 1.0                # cross-border capacity vs today (1.0 = unchanged)
+
+scenarios:
+  bau:
+    name: "Scenario #1 · Business as usual"
+    short: "BAU"
+    color: "#2a78d6"
+    narrative: >-
+      Current trends continue, gradual change in the energy mix. Weather like today, renewables keep
+      growing at today's pace, neighbours similar, import/export/transit as in 2022-2026,
+      border capacity unchanged.
+    params:
+      <<: *defaults
+
+  transition:
+    name: "Scenario #2 · Successful energy transition"
+    short: "Transition"
+    color: "#1baf7a"
+    narrative: >-
+      Countries reach their targets: high renewable penetration and enough flexibility. Renewables at
+      their peak can drive prices down (negative prices); storage, e-mobility and electrified demand grow.
+    params:
+      ch:
+        population_growth: 0.07
+        efficiency_gain: 0.10
+        add_ev_twh: 5.0
+        ev_smart_share: 0.6
+        add_heatpump_twh: 4.0
+        heating_peak_factor: 1.0
+        add_cooling_twh: 0.3
+        add_datacenter_twh: 2.0
+        add_industry_twh: 0.5
+        pv_twh: 32.0               # ~35 TWh non-hydro renewables target (EnG Art. 2)
+        wind_twh: 1.5
+        nuclear_gw: 2.24
+        nuclear_availability_factor: 1.0
+        hydro_ror_factor: 1.05     # towards the 37.9 TWh hydro target
+        summer_drought_factor: 1.0
+        battery_gw: 3.0
+        battery_hours: 2.5
+        battery_efficiency: 0.9
+        dsm_gw: 1.0
+        curtailment_floor_eur: -5
+      neighbours:
+        de_solar_factor: 2.4
+        de_wind_factor: 2.0
+        de_load_factor: 1.25
+        fr_nuclear_factor: 1.05
+        fr_solar_factor: 3.0
+        fr_wind_factor: 2.2
+        fr_load_factor: 1.12
+        it_solar_factor: 2.3
+        it_wind_factor: 1.8
+        it_load_factor: 1.10
+        de_battery_gw: 50
+        fr_battery_gw: 10
+        it_battery_gw: 25
+        battery_hours: 2.5
+      market:
+        gas_eur_mwh: 25
+        co2_eur_t: 130
+        ntc_factor: 1.1
+
+  delayed:
+    name: "Scenario #3 · Delayed energy transition"
+    short: "Delayed"
+    color: "#eb6834"
+    narrative: >-
+      Targets are missed and winters depend on gas plants. Very hot summers and cold winters raise
+      cooling and heating demand, nuclear declines, dry summers drain hydro, PV becomes the main
+      option; export capacity is limited.
+    params:
+      ch:
+        population_growth: 0.07
+        efficiency_gain: 0.03
+        add_ev_twh: 2.5
+        ev_smart_share: 0.1
+        add_heatpump_twh: 3.5
+        heating_peak_factor: 1.3
+        add_cooling_twh: 1.5
+        add_datacenter_twh: 1.5
+        add_industry_twh: 0.0
+        pv_twh: 17.0
+        wind_twh: 0.3
+        nuclear_gw: 2.24
+        nuclear_availability_factor: 0.8   # long outages of ageing units
+        hydro_ror_factor: 0.95
+        summer_drought_factor: 0.8
+        battery_gw: 0.5
+        battery_hours: 2.0
+        battery_efficiency: 0.88
+        dsm_gw: 0.1
+        curtailment_floor_eur: null
+      neighbours:
+        de_solar_factor: 1.5
+        de_wind_factor: 1.25
+        de_load_factor: 1.05
+        fr_nuclear_factor: 0.85
+        fr_solar_factor: 1.5
+        fr_wind_factor: 1.3
+        fr_load_factor: 1.08
+        it_solar_factor: 1.4
+        it_wind_factor: 1.2
+        it_load_factor: 1.05
+        de_battery_gw: 12
+        fr_battery_gw: 3
+        it_battery_gw: 6
+        battery_hours: 2.0
+      market:
+        gas_eur_mwh: 45
+        co2_eur_t: 90
+        ntc_factor: 0.8
+
+# One-at-a-time sensitivities (sheet "sensitivity analysis"), applied on top of every scenario.
+# op: mul = multiply, add = add, set = replace
+sensitivities:
+  - {id: pv_up20,      label: "Solar +20 %",               changes: [{key: ch.pv_twh, op: mul, value: 1.2}]}
+  - {id: nuc_down10,   label: "Nuclear −10 %",             changes: [{key: ch.nuclear_gw, op: mul, value: 0.9}]}
+  - {id: batt_x2,      label: "Swiss battery capacity ×2", changes: [{key: ch.battery_gw, op: mul, value: 2.0}]}
+  - {id: eu_batt_x2,   label: "Neighbours' batteries ×2",  changes: [{key: neighbours.de_battery_gw, op: mul, value: 2.0},
+                                                                      {key: neighbours.fr_battery_gw, op: mul, value: 2.0},
+                                                                      {key: neighbours.it_battery_gw, op: mul, value: 2.0}]}
+  - {id: fr_down15,    label: "Imports from France −15 %", changes: [{key: neighbours.fr_nuclear_factor, op: mul, value: 0.85}]}
+  - {id: gas_up30,     label: "Gas price +30 %",           changes: [{key: market.gas_eur_mwh, op: mul, value: 1.3}]}
+  - {id: co2_up30,     label: "CO₂ price +30 %",           changes: [{key: market.co2_eur_t, op: mul, value: 1.3}]}
+  - {id: demand_up10,  label: "Swiss demand +10 %",        changes: [{key: ch.population_growth, op: add, value: 0.10}]}
+  - {id: ntc_down20,   label: "Border capacity −20 %",     changes: [{key: market.ntc_factor, op: mul, value: 0.8}]}
+  - {id: eu_pv_up20,   label: "Neighbours' solar +20 %",   changes: [{key: neighbours.de_solar_factor, op: mul, value: 1.2},
+                                                                      {key: neighbours.fr_solar_factor, op: mul, value: 1.2},
+                                                                      {key: neighbours.it_solar_factor, op: mul, value: 1.2}]}

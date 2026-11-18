@@ -1,0 +1,9 @@
+# Minimal dependencies for the hosted API (Render). No PyTorch/Chronos, no ENTSO-E client.
+pandas>=2.1
+numpy>=1.24
+pyarrow>=14
+lightgbm>=4.1
+pyyaml>=6.0
+python-dotenv>=1.0
+fastapi>=0.110
+uvicorn>=0.29

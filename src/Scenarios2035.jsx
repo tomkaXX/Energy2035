@@ -5,7 +5,8 @@ import { MONTHS } from './model/pfc.js';
 // Results are produced by the Python project in Documents\Energy2035 (python -m pfc2035 all)
 // and copied to public/pfc2035/. The optional FastAPI backend enables custom what-if runs.
 const DATA_URL = `${import.meta.env.BASE_URL}pfc2035/`;
-const API_URL = import.meta.env.VITE_PFC_API ?? 'http://localhost:8000';
+const API_URL = (import.meta.env.VITE_PFC_API || 'http://localhost:8000').replace(/\/$/, '');
+const API_LOCAL = /localhost|127\.0\.0\.1/.test(API_URL);
 const IDS = ['bau', 'transition', 'delayed'];
 
 const f0 = (v) => (v == null || Number.isNaN(v) ? '–' : Math.round(v).toLocaleString('en-US'));
@@ -86,9 +87,18 @@ export default function Scenarios2035() {
       setSummary(s);
       setScen(Object.fromEntries(IDS.map((id, i) => [id, docs[i]]).filter(([, d]) => d)));
     }).catch((e) => setErr(String(e)));
-    fetch(`${API_URL}/api/health`).then((r) => r.json()).then((j) => setApi({ ok: !!j.ok, checked: true }))
-      .catch(() => setApi({ ok: false, checked: true }));
   }, []);
+
+  // poll the API every 5 s while it is offline, so starting uvicorn later needs no page reload
+  useEffect(() => {
+    if (api.ok) return undefined;
+    const ping = () => fetch(`${API_URL}/api/health`).then((r) => r.json())
+      .then((j) => setApi({ ok: !!j.ok, checked: true, error: j.ok ? null : j.error }))
+      .catch(() => setApi((a) => ({ ...a, ok: false, checked: true })));
+    ping();
+    const t = setInterval(ping, 5000);
+    return () => clearInterval(t);
+  }, [api.ok]);
 
   const cur = scen[sel];
   const startMs = cur ? Date.parse(cur.hourly.start_utc) : 0;
@@ -122,7 +132,7 @@ export default function Scenarios2035() {
       <Status>
         <h2>No 2035 results yet</h2>
         <p className="foot">Could not load <code>public/pfc2035/summary.json</code> ({err}). Generate it with the Python project:</p>
-        <pre className="code">{'cd %USERPROFILE%\\Documents\\Energy2035\n.venv\\Scripts\\activate\npython -m pfc2035 all'}</pre>
+        <pre className="code">{'cd $env:USERPROFILE\\Documents\\Energy2035\n.\\.venv\\Scripts\\Activate.ps1\npython -m pfc2035 all'}</pre>
       </Status>
     );
   }
@@ -335,9 +345,16 @@ export default function Scenarios2035() {
             </>
           ) : (
             <div className="foot">
-              Start the backend to run your own scenarios:
-              <pre className="code">{'cd %USERPROFILE%\\Documents\\Energy2035\n.venv\\Scripts\\activate\nuvicorn api.main:app --port 8000'}</pre>
-              or edit <code>config/scenarios.yaml</code> and run <code>python -m pfc2035 scenarios</code>.
+              {API_LOCAL ? <>
+                The what-if panel needs the Python API at <code>{API_URL}</code>. Start it in a second PowerShell window and keep it open
+                (this panel connects automatically within 5 s):
+                <pre className="code">{'cd $env:USERPROFILE\\Documents\\Energy2035\n.\\.venv\\Scripts\\Activate.ps1\nuvicorn api.main:app --port 8000'}</pre>
+              </> : <>
+                Waking up the what-if server at <code>{API_URL}</code> — the free server sleeps when unused and needs about a minute to start.
+                This panel connects automatically.<br />
+              </>}
+              {api.error && <>API answered but is not ready: {api.error}<br /></>}
+              Or edit <code>config/scenarios.yaml</code> and run <code>python -m pfc2035 scenarios</code>.
             </div>
           )}
         </div>

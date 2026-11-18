@@ -1,0 +1,41 @@
+# Pipeline settings. Paths are relative to the project root (Documents\Energy2035).
+
+data:
+  # energy-charts | entsoe | both | synthetic
+  #   energy-charts : Fraunhofer ISE public API, no key needed (default)
+  #   entsoe        : ENTSO-E Transparency, needs ENTSOE_API_KEY in .env
+  #   both          : ENTSO-E first (needs key), gaps filled from Energy-Charts
+  #   synthetic     : offline demo data, for testing the pipeline only — NOT real prices
+  source: both
+  start: "2023-01-01"        # 2022 (gas crisis) is excluded on purpose; change to test
+  end: "2026-01-01"          # exclusive
+  fuel_prices_csv: data/manual/fuel_prices_monthly.csv
+
+model:
+  test_start: "2025-07-01"   # hold-out period for the backtest
+  num_boost_round: 800
+  learning_rate: 0.04
+  num_leaves: 31
+  min_data_in_leaf: 60
+  linear_tree: true          # linear leaves let the model extrapolate to 2035 levels of PV
+  quantiles: [0.1, 0.9]
+
+scenario_run:
+  target_year: 2035
+  weather_years: [2023, 2024, 2025]   # historical years re-used as 2035 weather; results are averaged
+  price_floor: -500                   # EPEX harmonised min/max clearing price
+  price_cap: 4000
+
+chronos:
+  enabled: true
+  model_id: amazon/chronos-bolt-small # also try amazon/chronos-bolt-base or amazon/chronos-2
+  context_hours: 1024
+  horizon_hours: 24                   # day-ahead style rolling forecast
+  backtest_days: 60                   # number of rolling days in the hold-out period
+
+export:
+  outputs_dir: outputs
+  # where the React app (Repo\Energy2035) reads the JSON from; set to null to skip
+  react_public_dir: ../Repo/Energy2035/public/pfc2035
+  # where `python -m pfc2035 bundle` writes the deployable API (Render deploys it from the repo)
+  backend_bundle_dir: ../Repo/Energy2035/backend

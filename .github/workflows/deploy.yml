@@ -25,6 +25,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # URL of the Render backend: Settings -> Secrets and variables -> Actions -> Variables -> PFC_API_URL
+          VITE_PFC_API: ${{ vars.PFC_API_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

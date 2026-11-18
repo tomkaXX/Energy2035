@@ -1,0 +1,25 @@
+# Render Blueprint — deploys the FastAPI what-if backend from ./backend (free plan).
+# Render dashboard -> New -> Blueprint -> pick this repo. Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: energy2035-api
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install -r requirements-api.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: ALLOWED_ORIGINS
+        value: https://tomkaxx.github.io
+      - key: PFC_API_WEATHER_YEARS   # one weather year keeps what-if runs fast on the 0.1-CPU free plan
+        value: "2024"
+      - key: PFC_API_QUANTILES       # skip P10/P90 models to save memory
+        value: "0"

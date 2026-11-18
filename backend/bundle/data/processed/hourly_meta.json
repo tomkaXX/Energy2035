@@ -1,0 +1,87 @@
+{
+  "source": "both",
+  "synthetic": false,
+  "start": "2023-01-01",
+  "end": "2026-01-01",
+  "rows": 26304,
+  "share_missing_before_fill": {
+    "price_ch": 0.0,
+    "ch_load": 0.0,
+    "ch_solar": 0.0,
+    "ch_nuclear": 0.0,
+    "ch_ror": 0.0,
+    "de_load": 0.0,
+    "de_solar": 0.0,
+    "de_wind": 0.0,
+    "fr_load": 0.0003,
+    "fr_nuclear": 0.0003,
+    "it_load": 0.0,
+    "it_solar": 0.0
+  },
+  "provenance_hours": {
+    "price_ch": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "price_de": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "price_fr": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "price_it": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "ch_load": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "ch_nuclear": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "ch_solar": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "de_load": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "de_solar": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "de_wind": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "fr_load": {
+      "entsoe": 26296,
+      "energy-charts": 1
+    },
+    "fr_nuclear": {
+      "entsoe": 26296,
+      "energy-charts": 1
+    },
+    "it_load": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "it_solar": {
+      "entsoe": 26304,
+      "energy-charts": 1
+    },
+    "ch_ror": {
+      "energy-charts": 26304
+    }
+  },
+  "provenance_share": {
+    "entsoe": 0.952,
+    "energy-charts": 0.048
+  },
+  "built_at": "2026-11-18T13:22:39+00:00"
+}
