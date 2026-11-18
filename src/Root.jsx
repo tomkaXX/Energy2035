@@ -6,11 +6,22 @@ import './Scenarios2035.css';
 const TABS = [
   ['explorer', 'PFC explorer'],
   ['scenarios', 'Scenarios 2035 (ML)'],
+  ['whatif', 'What if?'],
+  ['quality', 'Model quality'],
 ];
+const fromHash = () => {
+  const h = window.location.hash.replace('#', '');
+  return TABS.some(([id]) => id === h) ? h : 'explorer';
+};
 
 export default function Root() {
-  const [tab, setTab] = useState(() => (window.location.hash === '#scenarios' ? 'scenarios' : 'explorer'));
+  const [tab, setTab] = useState(fromHash);
   useEffect(() => { window.history.replaceState(null, '', `#${tab}`); }, [tab]);
+  useEffect(() => {
+    const onHash = () => setTab(fromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
   return (
     <>
       <nav className="tabs" role="tablist" aria-label="Views">
@@ -18,7 +29,8 @@ export default function Root() {
           <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>
         ))}
       </nav>
-      {tab === 'explorer' ? <App /> : <Scenarios2035 />}
+      {/* one Scenarios2035 instance for the three ML tabs keeps data, selection and what-if state when switching */}
+      {tab === 'explorer' ? <App /> : <Scenarios2035 view={tab} />}
     </>
   );
 }

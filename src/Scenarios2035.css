@@ -67,3 +67,4 @@ code, .code { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; f
 .scen-mix-h { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); align-self: flex-start; }
 .scen-mix .mixpie { max-width: 230px; }
 .mix-note { margin: 4px 0 16px; text-align: center; }
+.whatif-base { margin-bottom: 16px; }

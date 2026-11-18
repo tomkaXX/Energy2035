@@ -8,6 +8,7 @@ const DATA_URL = `${import.meta.env.BASE_URL}pfc2035/`;
 const API_URL = (import.meta.env.VITE_PFC_API || 'http://localhost:8000').replace(/\/$/, '');
 const API_LOCAL = /localhost|127\.0\.0\.1/.test(API_URL);
 const IDS = ['bau', 'transition', 'delayed'];
+const VIEW_TITLES = { scenarios: 'Swiss PFC 2035 · three scenarios', whatif: 'What if? · build your own 2035 scenario', quality: 'Model quality · back-test on hold-out data' };
 
 const f0 = (v) => (v == null || Number.isNaN(v) ? '–' : Math.round(v).toLocaleString('en-US'));
 const f1 = (v) => (v == null || Number.isNaN(v) ? '–' : v.toFixed(1));
@@ -123,7 +124,7 @@ function Status({ children }) {
   return <div className="app"><div className="panel notes">{children}</div></div>;
 }
 
-export default function Scenarios2035() {
+export default function Scenarios2035({ view = 'scenarios' }) {
   const [summary, setSummary] = useState(null);
   const [scen, setScen] = useState({});
   const [err, setErr] = useState(null);
@@ -235,10 +236,14 @@ export default function Scenarios2035() {
     <div className="app">
       <header className="hdr">
         <div>
-          <h1>Swiss PFC 2035 · three scenarios</h1>
-          <p className="lede">Hourly Swiss spot-price forward curve for 2035 from a gradient-boosting model trained on {summary.data.start.slice(0, 4)}–{String(+summary.data.end.slice(0, 4) - 1)} fundamentals, benchmarked against the Chronos foundation model.</p>
+          <h1>{VIEW_TITLES[view]}</h1>
+          <p className="lede">{view === 'whatif'
+            ? 'Change the 2035 assumptions of a scenario and re-price all 8,760 hours with the trained model (needs the Python API).'
+            : view === 'quality'
+              ? 'How well the models reproduce prices they have not seen: LightGBM (fundamentals) vs. the Chronos foundation model vs. naive baselines.'
+              : <>Hourly Swiss spot-price forward curve for 2035 from a gradient-boosting model trained on {summary.data.start.slice(0, 4)}–{String(+summary.data.end.slice(0, 4) - 1)} fundamentals, benchmarked against the Chronos foundation model.</>}</p>
         </div>
-        <button className="btn" onClick={download}>Download hourly PFC 2035 · {cur.short} (CSV)</button>
+        {view === 'scenarios' && <button className="btn" onClick={download}>Download hourly PFC 2035 · {cur.short} (CSV)</button>}
       </header>
 
       {summary.data.synthetic && (
@@ -256,6 +261,7 @@ export default function Scenarios2035() {
         </p>
       )}
 
+      {view === 'scenarios' && <>
       <section className="scen-cards">
         {sc.map((s) => (
           <button key={s.id} className={`scen-card ${sel === s.id ? 'on' : ''}`} onClick={() => { setSel(s.id); setCustom(null); setOver({}); }} style={{ '--sc': s.color }}>
@@ -382,6 +388,22 @@ export default function Scenarios2035() {
         </div>
       </section>
 
+      </>}
+
+      {view === 'whatif' && <>
+      <section className="panel whatif-base">
+        <div className="panel-h">
+          <h2>Start from scenario</h2>
+          <div className="seg small" role="radiogroup" aria-label="Base scenario">
+            {sc.map((s) => (
+              <button key={s.id} role="radio" aria-checked={sel === s.id} className={sel === s.id ? 'on' : ''}
+                onClick={() => { setSel(s.id); setCustom(null); setOver({}); }}>{s.short}</button>
+            ))}
+          </div>
+        </div>
+        <p className="foot" style={{ marginTop: 0 }}>{cur.name}: {f0(cur.kpis.annual_avg.mean)} €/MWh, {f0(cur.kpis.neg_hours.mean)} negative hours. Sliders start at this scenario's assumptions.</p>
+      </section>
+
       <section className="grid2">
         <div className="panel">
           <div className="panel-h"><h2>What-if · start from {cur.short}</h2>
@@ -443,8 +465,11 @@ export default function Scenarios2035() {
         </div>
       </section>
 
+      </>}
+
+      {view === 'quality' && <>
       <section className="panel">
-        <div className="panel-h"><h2>Model quality · back-test on hold-out data</h2><span className="muted">{bt.period[0].slice(0, 10)} → {bt.period[1].slice(0, 10)}</span></div>
+        <div className="panel-h"><h2>Back-test results</h2><span className="muted">{bt.period[0].slice(0, 10)} → {bt.period[1].slice(0, 10)}</span></div>
         <table className="tbl res">
           <thead><tr><th>Model</th><th className="num">MAE €/MWh</th><th className="num">RMSE</th><th className="num">R²</th><th className="num">Neg. hours (pred / actual)</th><th>What it sees</th></tr></thead>
           <tbody>
@@ -476,6 +501,7 @@ export default function Scenarios2035() {
         </ol>
         <p className="foot">Generated {summary.generated_at.replace('T', ' ').slice(0, 16)} UTC. Research tool, not investment advice.</p>
       </section>
+      </>}
     </div>
   );
 }
