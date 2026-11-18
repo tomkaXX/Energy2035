@@ -61,6 +61,64 @@ function Bars({ rows, unit, color = 'var(--series-1)', signed = false }) {
   );
 }
 
+// Energy mix: how each scenario's Swiss demand is covered (TWh/year, from the scenario run on real data).
+// Fixed category -> colour mapping (categorical slots 1-5, validated for light & dark).
+const MIX_CATS = [
+  { key: 'run_of_river_twh', label: 'Hydro run-of-river', color: 'var(--series-1)' },
+  { key: 'nuclear_twh', label: 'Nuclear', color: 'var(--series-2)' },
+  { key: 'wind_twh', label: 'Wind', color: 'var(--series-3)' },
+  { key: 'pv_twh', label: 'Solar PV', color: 'var(--series-4)' },
+  { key: 'residual_twh', label: 'Storage hydro, imports & other', color: 'var(--series-5)' },
+];
+
+function MixPie({ mix, size = 230 }) {
+  const [hi, setHi] = useState(null);
+  const parts = MIX_CATS.map((c) => ({ ...c, v: Math.max(0, mix[c.key] ?? 0) }));
+  const total = parts.reduce((a, p) => a + p.v, 0) || 1;
+  const surplus = (mix.residual_twh ?? 0) < 0 ? -mix.residual_twh : 0;
+  const R = 78, cx = size / 2, cy = size / 2;
+  let a0 = -Math.PI / 2;
+  const slices = parts.map((p) => {
+    const a1 = a0 + (p.v / total) * 2 * Math.PI;
+    const mid = (a0 + a1) / 2;
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    const pt = (a, r) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+    const [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R);
+    const d = p.v / total >= 0.9999 ? `M${cx - R},${cy}a${R},${R} 0 1,0 ${2 * R},0a${R},${R} 0 1,0 ${-2 * R},0`
+      : `M${cx},${cy}L${x0},${y0}A${R},${R} 0 ${large} 1 ${x1},${y1}Z`;
+    const [lx, ly] = pt(mid, R + 16);
+    const s = { ...p, d, share: p.v / total, lx, ly, anchor: Math.cos(mid) > 0.15 ? 'start' : Math.cos(mid) < -0.15 ? 'end' : 'middle' };
+    a0 = a1;
+    return s;
+  });
+  return (
+    <div className="mixpie">
+      <svg viewBox={`0 0 ${size} ${size}`} role="img" aria-label={slices.map((x) => `${x.label} ${Math.round(x.share * 100)}%`).join(', ')}
+        onMouseLeave={() => setHi(null)}>
+        {slices.filter((x) => x.v > 0).map((x) => (
+          <path key={x.key} d={x.d} fill={x.color} className={`slice ${hi && hi.key !== x.key ? 'dim' : ''}`}
+            onMouseEnter={() => setHi(x)} />
+        ))}
+        {slices.filter((x) => x.share >= 0.03).map((x) => (
+          <text key={x.key} x={x.lx} y={x.ly + 4} textAnchor={x.anchor} className="slice-l">{Math.round(x.share * 100)}%</text>
+        ))}
+      </svg>
+      <div className="mix-sub" aria-live="polite">
+        {hi ? <><i className="mix-key" style={{ background: hi.color }} />{hi.label}: <b>{hi.v.toFixed(1)} TWh</b> · {(hi.share * 100).toFixed(1)}%</>
+          : <>Demand {f1(mix.demand_twh)} TWh{surplus > 0 && <> · net surplus {f1(surplus)} TWh (exported / curtailed)</>}</>}
+      </div>
+    </div>
+  );
+}
+
+function MixLegend() {
+  return (
+    <div className="mix-legend">
+      {MIX_CATS.map((c) => <span key={c.key} className="lg"><i style={{ background: c.color, borderRadius: 2 }} />{c.label}</span>)}
+    </div>
+  );
+}
+
 function Status({ children }) {
   return <div className="app"><div className="panel notes">{children}</div></div>;
 }
@@ -208,9 +266,12 @@ export default function Scenarios2035() {
             <span className="scen-params">
               PV {s.params.ch.pv_twh} TWh · nuclear {s.params.ch.nuclear_gw} GW · batteries {s.params.ch.battery_gw} GW · gas {s.params.market.gas_eur_mwh} €/MWh · CO₂ {s.params.market.co2_eur_t} €/t · border cap. ×{s.params.market.ntc_factor}
             </span>
+            {s.mix && <span className="scen-mix"><span className="scen-mix-h">Energy mix 2035</span><MixPie mix={s.mix} size={210} /></span>}
           </button>
         ))}
       </section>
+      <MixLegend />
+      <p className="foot mix-note">Energy mix: share of 2035 Swiss demand covered by each source in the scenario. "Storage hydro, imports &amp; other" is what dam/pumped-storage hydro, imports and small thermal plants must cover.</p>
 
       <section className="panel">
         <div className="panel-h">
@@ -373,6 +434,7 @@ export default function Scenarios2035() {
                   ))}
                 </tbody>
               </table>
+              {custom.mix && <div className="mix-custom"><MixPie mix={custom.mix} size={200} /><MixLegend /></div>}
               <LineChart xLabels={Array.from({ length: 24 }, (_, h) => `${h}h`)} xTickEvery={3}
                 series={[{ name: `${cur.short} ${season}`, color: cur.color, values: prof(cur) },
                   { name: `Custom ${season}`, color: 'var(--text-primary)', values: season === 'winter' ? custom.profile_winter : custom.profile_summer, dash: '5 4' }]} />
