@@ -13,6 +13,12 @@ Live: https://tomkaXX.github.io/Energy2035
 
 > The plant and climate figures are rounded and only indicative. For real analysis, replace them with BFE WASTA (hydro plants), ENSI/operator data (nuclear) and MeteoSwiss CH2025 scenario data. The model is for learning, not a forecast.
 
+## Scenarios 2035 (ML) tab
+
+A second tab shows the machine-learning PFC for 2035 under the three E-CUBE scenarios (BAU, successful transition, delayed transition): the results table, monthly and daily shapes, month × hour heatmap, hourly week view with P10/P90, duration curve, driver importance, sensitivity tornado, back-test vs. the Chronos foundation model, and a what-if panel.
+
+The data comes from the Python project in `Documents\Energy2035` (`python -m pfc2035 all`), which writes JSON into `public/pfc2035/`. The what-if sliders call its FastAPI backend (`uvicorn api.main:app --port 8000`); set `VITE_PFC_API` to use another URL. Open http://localhost:5173/Energy2035/#scenarios.
+
 ## Structure
 
 ```
@@ -22,7 +28,10 @@ src/data/climate.js       Climate indicators per scenario/horizon (edit here)
 src/model/pfc.js          Hourly PFC shape model
 src/components/SwissMap.jsx
 src/components/Charts.jsx Line chart, heatmap, mini bars (plain SVG)
-src/App.jsx               Layout, controls, KPIs
+src/App.jsx               Layout, controls, KPIs (PFC explorer tab)
+src/Root.jsx              Tabs
+src/Scenarios2035.jsx     Scenarios 2035 (ML) tab
+public/pfc2035/           JSON results from the Python model
 ```
 
 ## Run locally

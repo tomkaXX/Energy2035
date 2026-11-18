@@ -1,0 +1,46 @@
+/* Tabs + "Scenarios 2035" view. Uses the tokens from App.css. */
+.tabs { max-width: 1480px; margin: 0 auto; padding: 14px 16px 0; display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.tabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px; font: inherit; font-size: 14px; color: var(--text-secondary); cursor: pointer; }
+.tabs button.on { color: var(--text-primary); border-bottom-color: var(--accent); font-weight: 600; }
+
+.banner { background: color-mix(in srgb, var(--warning) 18%, var(--surface-1)); border: 1px solid color-mix(in srgb, var(--warning) 55%, transparent); border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; color: var(--text-primary); }
+code, .code { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 12px; }
+.code { background: var(--div-mid); border-radius: 8px; padding: 10px 12px; margin: 8px 0; white-space: pre; overflow-x: auto; color: var(--text-primary); }
+
+.scen-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.scen-card { text-align: left; background: var(--surface-1); border: 1px solid var(--border); border-top: 4px solid var(--sc); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; font: inherit; color: inherit; cursor: pointer; }
+.scen-card.on { box-shadow: 0 0 0 2px var(--sc); }
+.scen-name { font-size: 13px; font-weight: 600; color: var(--sc); }
+.scen-avg { font-size: 26px; font-weight: 650; }
+.scen-avg small { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.scen-sub { font-size: 12px; color: var(--text-secondary); }
+.scen-narr { font-size: 12px; color: var(--text-muted); line-height: 1.45; margin-top: 4px; }
+.scen-params { font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+
+.tbl-wrap { overflow-x: auto; }
+.tbl.res tr { cursor: default; }
+.tbl .num { text-align: right; white-space: nowrap; }
+.tbl .rng { color: var(--text-muted); font-size: 10px; }
+.tbl td b { color: var(--text-primary); font-weight: 600; }
+.main-gap > * + * { margin-top: 16px; }
+.app > section + section { margin-top: 16px; }
+.seg.small button { padding: 4px 10px; }
+
+.bars { display: flex; flex-direction: column; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: minmax(150px, 1.1fr) 2fr 90px; gap: 10px; align-items: center; font-size: 12px; }
+.bar-l { color: var(--text-secondary); }
+.bar-track { position: relative; height: 14px; background: var(--div-mid); border-radius: 4px; }
+.bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+.bar-mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--axis); }
+.bar-v { text-align: right; font-variant-numeric: tabular-nums; }
+
+.mix { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+.mix b { margin-right: 6px; }
+.whatif { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+.row-btns { display: flex; gap: 8px; margin-top: 14px; }
+.btn.ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--border); }
+.btn:disabled { opacity: 0.6; cursor: wait; }
+.pill { font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--text-muted); }
+.ok-pill { color: var(--good); border-color: var(--good); }
+
+@media (max-width: 1000px) { .scen-cards { grid-template-columns: 1fr; } .whatif { grid-template-columns: 1fr; } }
