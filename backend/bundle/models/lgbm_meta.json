@@ -406,8 +406,8 @@
     "source": "both",
     "synthetic": false,
     "start": "2023-01-01",
-    "end": "2026-11-17",
-    "rows": 33984,
+    "end": "2026-01-01",
+    "rows": 26304,
     "share_missing_before_fill": {
       "price_ch": 0.0,
       "ch_load": 0.0,
@@ -417,79 +417,104 @@
       "de_load": 0.0,
       "de_solar": 0.0,
       "de_wind": 0.0,
-      "fr_load": 0.0002,
-      "fr_nuclear": 0.001,
+      "fr_load": 0.0003,
+      "fr_nuclear": 0.0003,
       "it_load": 0.0,
       "it_solar": 0.0
     },
     "provenance_hours": {
       "price_ch": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "price_de": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "price_fr": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "price_it": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "ch_load": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "ch_nuclear": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "ch_solar": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "de_load": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "de_solar": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "de_wind": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "fr_load": {
-        "entsoe": 33976,
+        "entsoe": 26296,
         "energy-charts": 1
       },
       "fr_nuclear": {
-        "entsoe": 33951,
+        "entsoe": 26296,
         "energy-charts": 1
       },
       "it_load": {
-        "entsoe": 33984,
+        "entsoe": 26304,
         "energy-charts": 1
       },
       "it_solar": {
-        "entsoe": 33983,
-        "energy-charts": 2
+        "entsoe": 26304,
+        "energy-charts": 1
       },
       "ch_ror": {
-        "energy-charts": 33984
+        "energy-charts": 26304
       }
     },
     "provenance_share": {
       "entsoe": 0.952,
       "energy-charts": 0.048
     },
+    "built_at": "2026-11-18T13:22:39+00:00",
     "fuel_source": "daily TTF + EUA (data/csv)",
     "reservoir": "BFE weekly bulletin (Monday 00:00), ch_reservoir_weekly.csv",
-    "built_at": "2026-11-19T14:03:52+00:00"
+    "pv_correction": {
+      "2023": {
+        "avg_capacity_mw": 5470.5,
+        "expected_twh": 5.2,
+        "entsoe_twh": 3.54,
+        "factor": 1.469
+      },
+      "2024": {
+        "avg_capacity_mw": 7268.1,
+        "expected_twh": 6.9,
+        "entsoe_twh": 4.31,
+        "factor": 1.603
+      },
+      "2025": {
+        "avg_capacity_mw": 8833.9,
+        "expected_twh": 8.39,
+        "entsoe_twh": 5.11,
+        "factor": 1.643
+      },
+      "2026": {
+        "factor": 1.643,
+        "note": "incomplete year: factor of latest complete year"
+      }
+    },
+    "pv_specific_yield_kwh_per_kwp": 950.0
   },
   "backtest": {
     "period": [
@@ -497,14 +522,14 @@
       "2026-11-16 23:00:00+00:00"
     ],
     "lightgbm": {
-      "mae": 27.9790341704267,
-      "rmse": 43.09632487441857,
-      "bias": -17.305606570686482,
-      "r2": 0.5944726701354479,
+      "mae": 28.34526912872025,
+      "rmse": 43.353271905065434,
+      "bias": -18.018864807831786,
+      "r2": 0.5896226199718906,
       "neg_hours_true": 239,
-      "neg_hours_pred": 475,
+      "neg_hours_pred": 478,
       "neg_recall": 0.9037656903765691,
-      "neg_precision": 0.45473684210526316
+      "neg_precision": 0.45188284518828453
     },
     "naive_same_hour_last_week": {
       "mae": 26.183912109375,
@@ -529,33 +554,33 @@
     "note": "LightGBM sees the actual fundamentals of each hour (an 'ex-post' fundamental fit, like a PFC shape model), the naive models only see past prices."
   },
   "importance_by_feature": {
-    "srmc_gas": 30.394,
-    "de_residual": 11.014,
-    "gas_share": 8.4,
-    "it_residual": 7.623,
-    "ch_res_anom_twh": 7.058,
-    "ch_residual_d": 3.316,
-    "ch_res_fill_twh": 1.693,
-    "hour": 1.574,
-    "dow": 1.545,
-    "ch_solar": 1.319,
-    "ch_nuclear": 0.798,
-    "ch_ror": 0.766,
-    "is_off": 0.611,
-    "fr_residual": 0.45,
-    "neigh_residual_share": 0.306,
-    "neigh_residual_d": 0.141,
-    "ch_residual": 0.12,
-    "ch_wind": 0.117,
-    "ch_load": 0.061,
-    "de_res_share": 0.033
+    "srmc_gas": 30.391,
+    "de_residual": 11.161,
+    "gas_share": 8.304,
+    "it_residual": 7.876,
+    "ch_res_anom_twh": 7.229,
+    "ch_residual_d": 2.977,
+    "ch_res_fill_twh": 1.67,
+    "hour": 1.576,
+    "dow": 1.476,
+    "ch_nuclear": 0.998,
+    "ch_ror": 0.864,
+    "ch_solar": 0.59,
+    "ch_residual": 0.55,
+    "is_off": 0.517,
+    "fr_residual": 0.389,
+    "neigh_residual_share": 0.277,
+    "ch_wind": 0.121,
+    "neigh_residual_d": 0.115,
+    "de_res_share": 0.049,
+    "ch_load": 0.042
   },
   "importance_by_factor": {
-    "External market (gas, CO\u2082)": 24.728,
-    "Interconnection & neighbours": 23.852,
-    "Hydro storage (water value)": 9.094,
-    "Production mix": 7.748,
-    "Calendar / seasonality": 2.707,
-    "Consumption profile": 0.058
+    "External market (gas, CO\u2082)": 24.669,
+    "Interconnection & neighbours": 23.952,
+    "Hydro storage (water value)": 9.21,
+    "Production mix": 7.792,
+    "Calendar / seasonality": 2.651,
+    "Consumption profile": 0.04
   }
 }

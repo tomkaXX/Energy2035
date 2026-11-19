@@ -60,6 +60,11 @@ def build(source: str | None = None, start: str | None = None, end: str | None =
     if source != "synthetic" and "ch_res_fill_twh" not in df:
         df = _attach_reservoir(df, start, end)
     reservoir_source = df.attrs.get("reservoir_source")
+    if source != "synthetic":
+        from . import pv
+        df, pv_info = pv.apply(df)
+    else:
+        pv_info = {}
     prov = df.attrs.get("provenance") or {c: {source: int(df[c].notna().sum())} for c in df.columns}
 
     full = pd.date_range(start, end, freq="1h", tz="UTC", inclusive="left")
@@ -94,6 +99,7 @@ def build(source: str | None = None, start: str | None = None, end: str | None =
         "provenance_share": _share(prov),
         "fuel_source": fuel_source,
         "reservoir": reservoir_source,
+        "pv_correction": pv_info.get("info"),
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     HOURLY_META.write_text(json.dumps(meta, indent=2), encoding="utf-8")
@@ -147,6 +153,24 @@ def refresh_reservoir() -> pd.DataFrame:
     y = df.index.tz_convert("Europe/Zurich").year
     print("Reservoir filling attached (TWh): ")
     print(df.groupby(y)["ch_res_fill_twh"].agg(["mean", "min", "max"]).round(2).to_string())
+    return df
+
+
+def refresh_pv() -> pd.DataFrame:
+    """Rescale Swiss solar to the official installed capacity (data/csv/pv_national.csv)."""
+    from . import pv
+
+    df, meta = load()
+    df, c = pv.apply(df)
+    if not c:
+        raise SystemExit("data/csv/pv_national.csv not found")
+    meta["pv_correction"] = {str(k): v for k, v in c["info"].items()}
+    meta["pv_specific_yield_kwh_per_kwp"] = c["specific_yield_kwh_per_kwp"]
+    df.to_parquet(HOURLY_PARQUET)
+    HOURLY_META.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    print(f"Swiss PV rescaled to official capacity × {c['specific_yield_kwh_per_kwp']:.0f} kWh/kWp:")
+    for y, i in c["info"].items():
+        print(f"  {y}: {i}")
     return df
 
 

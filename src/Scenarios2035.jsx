@@ -540,7 +540,7 @@ export default function Scenarios2035({ view = 'scenarios' }) {
             const old = Math.max(0, ys.length - pal.length);
             const last = summary.reservoir_last_date;
             const series = ys.map((y, i) => ({
-              name: last && last.startsWith(y) ? `${y} (to ${last.slice(8, 10)}.${last.slice(5, 7)}.)` : y,
+              name: last && last.startsWith(y) ? `${y} (to ${last.slice(8, 10)}.${last.slice(5, 7)}.${last.slice(0, 4)})` : y,
               color: i < old ? 'var(--text-muted)' : pal[i - old],
               dash: i < old ? '4 3' : undefined,
               values: Array.from({ length: n }, (_, k) => rw[y][k] ?? null),

@@ -2,8 +2,6 @@
 
     python -m pfc2035 reservoir-pdf      data/pdf/*.pdf  ->  data/csv/ch_reservoir_weekly.csv
 
-Columns: date, total_gwh, total_pct (%), total_capacity_gwh, then GWh and % per region (Valais,
-Grisons, Ticino, rest of CH) and the Rhine flow at Rheinfelden (m³/s and % of long-term mean).
 Each PDF holds one year of Monday 00:00 values: stored energy (GWh) and filling (%) for Valais,
 Grisons, Ticino, rest of Switzerland and the Swiss total, plus Rhine flow at Rheinfelden.
 The CSV is the reusable source for the model (pfc2035/data/reservoir.py); re-run only when a new
@@ -57,7 +55,9 @@ def parse_pdf(pdf: Path) -> tuple[pd.DataFrame, dict]:
             continue
         vals = [_num(t) for t in toks[:13]]
         row = dict(zip(COLS, vals + [None] * (13 - len(vals))))
-        # *_pct columns stay in percent, exactly as printed in the bulletin (42.7 = 42.7 %)
+        for c in COLS:
+            if c.endswith("_pct") and row[c] is not None:
+                row[c] = round(row[c] / 100, 4)
         row["date"] = pd.to_datetime(m.group(1), format="%d.%m.%Y")
         rows.append(row)
     df = pd.DataFrame(rows).drop_duplicates("date")
@@ -84,9 +84,7 @@ def extract(pdf_dir: Path = PDF_DIR, out: Path = CSV_OUT) -> pd.DataFrame:
     all_ = pd.concat(frames).sort_values("date")
     # a week can appear in two files (year boundary): keep the value from the newer bulletin
     all_ = all_.drop_duplicates("date", keep="last").reset_index(drop=True)
-    # Swiss total first (what the model uses), then the regions and the Rhine flow
-    first = ["date", "total_gwh", "total_pct", "total_capacity_gwh"]
-    all_ = all_[first + [c for c in COLS if c not in first] + ["source_file"]]
+    all_ = all_[["date"] + COLS + ["total_capacity_gwh", "source_file"]]
     out.parent.mkdir(parents=True, exist_ok=True)
     all_.to_csv(out, index=False, date_format="%Y-%m-%d")
     print(f"Saved {len(all_)} weekly rows -> {out}")

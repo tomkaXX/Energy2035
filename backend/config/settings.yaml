@@ -16,6 +16,12 @@ data:
   # Swiss reservoir content, weekly (Monday 00:00). Built from the BFE PDF bulletins in data/pdf with
   #   python -m pfc2035 reservoir-pdf      (ENTSO-E A72 is used only if this file is missing)
   reservoir_csv: data/csv/ch_reservoir_weekly.csv
+  # Swiss PV: official installed capacity (Swissolar / SFOE register via ecoen.ch). ENTSO-E solar is
+  # rescaled per year to  avg capacity × specific yield  (python -m pfc2035 pv)
+  pv_national_csv: data/csv/pv_national.csv
+  pv_cantons_csv: data/csv/pv_cantons_2026-08-06.csv
+  pv_large_csv: data/csv/pv_large_installations.csv
+  pv_specific_yield_kwh_per_kwp: 950       # Swiss average yield (assumption, edit if you have a better value)
 
 model:
   test_start: "2026-01-01"   # hold-out = 2026 (Jan–Nov): a full unseen year incl. the Hormuz gas shock

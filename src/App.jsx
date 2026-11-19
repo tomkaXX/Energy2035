@@ -133,7 +133,7 @@ export default function App() {
           <section className="map-row">
             <div className="panel">
               <div className="panel-h">
-                <h2>Generation map · nuclear &amp; hydro</h2>
+                <h2>Generation map · nuclear, hydro &amp; solar</h2>
                 <label className="chk"><input type="checkbox" checked={showStress} onChange={(e) => setShowStress(e.target.checked)} /> Climate stress</label>
               </div>
               <SwissMap year={p.year} clim={res.clim} nukes={res.nukes} showStress={showStress} selected={selected} onSelect={setSelected} />

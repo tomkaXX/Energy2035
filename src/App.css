@@ -182,3 +182,14 @@ select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; b
 .howto { padding-left: 18px; margin: 8px 0 0; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
 .climate-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 @media (max-width: 1200px) { .map-row { grid-template-columns: 1fr; } }
+
+/* solar PV on the map */
+.pv-canton, .pv-large { cursor: pointer; }
+.pv-canton .hit, .pv-large .hit { fill: transparent; }
+.pv-dot { fill: var(--series-4); stroke: var(--surface-1); stroke-width: 1.5; }
+.pv-canton:hover .pv-dot { stroke: var(--text-primary); }
+.pv-diamond { fill: var(--series-4); stroke: var(--text-primary); stroke-width: 1.2; }
+.pv-diamond.planned { fill: var(--surface-1); stroke: var(--series-4); stroke-width: 2; stroke-dasharray: 3 2; }
+.lg-pv { background: var(--series-4); }
+.lg-pv-large { background: var(--series-4); border: 1.2px solid var(--text-primary); border-radius: 2px !important; transform: rotate(45deg); width: 9px !important; height: 9px !important; }
+.lg-pv-large.planned { background: var(--surface-1); border: 2px dashed var(--series-4); }

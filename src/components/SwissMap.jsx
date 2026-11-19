@@ -32,9 +32,13 @@ const STATUS_ICON = { good: '●', warning: '▲', serious: '◆', critical: '�
 export default function SwissMap({ year, clim, nukes, showStress, selected, onSelect }) {
   const [topo, setTopo] = useState(null);
   const [hover, setHover] = useState(null);
+  const [pv, setPv] = useState(null);         // PV by canton + large plants (public/pfc2035/pv_map.json)
+  const [showPv, setShowPv] = useState(true);
+  const [pvHover, setPvHover] = useState(null);
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}ch.json`).then((r) => r.json()).then(setTopo).catch(() => setTopo(null));
+    fetch(`${import.meta.env.BASE_URL}pfc2035/pv_map.json`).then((r) => (r.ok ? r.json() : null)).then(setPv).catch(() => setPv(null));
   }, []);
 
   const geo = useMemo(() => {
@@ -66,6 +70,22 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
 
   const active = hover || plants.find((p) => p.id === selected);
 
+  // canton dot: radius from watts per capita (322–1,884 W) -> ~3–6 px
+  const rPv = (w) => 1.5 + Math.sqrt(w) * 0.105;
+  const pvPoints = useMemo(() => {
+    if (!geo || !pv) return { cantons: [], large: [] };
+    const cantons = (pv.cantons || []).map((c) => {
+      const [x, y] = geo.projection([c.capital_lon, c.capital_lat]);
+      return { ...c, x, y };
+    });
+    const large = (pv.large || []).map((l) => {
+      const [x, y] = geo.projection([l.lon, l.lat]);
+      return { ...l, x, y };
+    });
+    return { cantons, large };
+  }, [geo, pv]);
+  const fmtN = (v, d = 0) => (v == null || Number.isNaN(v) ? '–' : Number(v).toLocaleString('de-CH', { maximumFractionDigits: d, minimumFractionDigits: d }));
+
   return (
     <div className="map-wrap">
       <svg viewBox={`0 0 ${W} ${H}`} className="map" role="img" aria-label="Map of Switzerland with nuclear and hydro power plants">
@@ -93,6 +113,24 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
         {plants.filter((p) => p.type === 'nuclear' && p.mw > 900).map((p) => (
           <text key={p.id + 'l'} x={p.x + r(p.mw) + 6} y={p.y + 4} className="map-label">{p.name}</text>
         ))}
+        {showPv && pvPoints.cantons.map((c) => (
+          <g key={c.canton_code} transform={`translate(${c.x},${c.y})`} className="pv-canton"
+             onMouseEnter={() => setPvHover({ kind: 'canton', ...c })} onMouseLeave={() => setPvHover(null)}>
+            <circle r={rPv(c.watts_per_capita) + 4} className="hit" />
+            <circle r={rPv(c.watts_per_capita)} className="pv-dot" />
+          </g>
+        ))}
+        {showPv && pvPoints.large.map((l) => {
+          const s = 5.5;
+          return (
+            <g key={l.name} transform={`translate(${l.x},${l.y})`} className="pv-large"
+               onMouseEnter={() => setPvHover({ kind: 'large', ...l })} onMouseLeave={() => setPvHover(null)}>
+              <circle r={s + 5} className="hit" />
+              <rect x={-s} y={-s} width={2 * s} height={2 * s} transform="rotate(45)" rx="1.5"
+                className={`pv-diamond ${l.status === 'planned' ? 'planned' : ''}`} />
+            </g>
+          );
+        })}
         {!geo && <text x={W / 2} y={H / 2} textAnchor="middle" className="map-label">Loading map…</text>}
       </svg>
 
@@ -104,6 +142,14 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
         <span className="lg"><i className="lg-pumped" />Pumped storage</span>
         <span className="lg muted">Circle area ∝ capacity (MW)</span>
       </div>
+      {pv && (
+        <div className="map-legend">
+          <label className="chk"><input type="checkbox" checked={showPv} onChange={(e) => setShowPv(e.target.checked)} /> Solar PV</label>
+          <span className="lg"><i className="lg-pv" />PV per canton capital · size ∝ W per inhabitant (CH Ø 946 W, {pv.cantons_date?.split('-').reverse().join('.')})</span>
+          <span className="lg"><i className="lg-pv-large" />Large PV plant</span>
+          <span className="lg"><i className="lg-pv-large planned" />planned</span>
+        </div>
+      )}
       {showStress && (
         <div className="map-legend">
           <span className="muted">Climate stress ring:</span>
@@ -113,7 +159,25 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
         </div>
       )}
 
-      {active && (
+      {pvHover && (
+        <div className="plant-card">
+          {pvHover.kind === 'canton' ? <>
+            <div className="pc-head"><strong>{pvHover.canton_en} ({pvHover.canton_code})</strong><span className="muted">#{pvHover.rank} of 26</span></div>
+            <div className="pc-row"><span>Solar PV per inhabitant</span><span><b>{fmtN(pvHover.watts_per_capita)} W</b></span></div>
+            <div className="pc-row"><span>Installed capacity</span><span><b>{fmtN(pvHover.capacity_mw, 1)} MW</b></span></div>
+            <div className="pc-row"><span>Systems</span><span>{fmtN(pvHover.systems)} · Ø {fmtN(pvHover.avg_system_kwp, 1)} kWp</span></div>
+            <div className="pc-row"><span>Roof-integrated</span><span>{fmtN(pvHover.roof_integrated_pct, 1)} %</span></div>
+            <p className="pc-note">Point at the capital ({pvHover.capital}). SFOE register via ecoen.ch, {pvHover.data_date?.split('-').reverse().join('.')}.</p>
+          </> : <>
+            <div className="pc-head"><strong>{pvHover.name}</strong><span className="muted">{pvHover.canton_code}</span></div>
+            <div className="pc-row"><span>{pvHover.kind_label || pvHover.kind} · {pvHover.status}{pvHover.year ? ` ${pvHover.year}` : ''}</span>
+              <span><b>{pvHover.capacity_mwp ? `${fmtN(pvHover.capacity_mwp, 1)} MWp` : 'MWp n/a'}</b>{pvHover.production_gwh_per_year ? ` · ~${fmtN(pvHover.production_gwh_per_year, 1)} GWh/yr` : ''}</span></div>
+            <p className="pc-note">{pvHover.note}</p>
+          </>}
+        </div>
+      )}
+
+      {!pvHover && active && (
         <div className="plant-card">
           <div className="pc-head">
             <strong>{active.name}</strong>
