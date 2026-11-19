@@ -126,6 +126,11 @@ def map_json() -> dict:
     f = resolve(st.get("battery_facilities_csv"))
     if f and f.exists():
         out["battery_facilities"] = json.loads(pd.read_csv(f).to_json(orient="records"))
+    # hydro: latest reservoir content (BFE weekly bulletin)
+    from . import reservoir
+    h = reservoir.hydro_status(resolve(st.get("reservoir_csv")))
+    if h:
+        out["hydro"] = h
     # ENTSO-E vs official production (from the dataset meta written by `python -m pfc2035 pv`)
     from ..config import HOURLY_META
     if HOURLY_META.exists():

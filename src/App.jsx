@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import SwissMap from './components/SwissMap.jsx';
 import PvPanel from './components/PvPanel.jsx';
+import Section from './components/Section.jsx';
 import { LineChart, Heatmap, MiniBars } from './components/Charts.jsx';
 import { computePFC, defaultParams, toCSV, MONTHS } from './model/pfc.js';
 import { INDICATORS, SCENARIOS, indicatorAt } from './data/climate.js';
@@ -142,7 +143,9 @@ export default function App() {
             </div>
 
             <div className="panel fleet">
-              <h2>Nuclear fleet in {p.year}</h2>
+              <h2 className="fleet-title">Swiss generation &amp; storage</h2>
+              <Section title={`Nuclear fleet in ${p.year}`} color="var(--series-2)" defaultOpen
+                summary={`${nucGW.toFixed(2)} GW online`}>
               <table className="tbl">
                 <thead><tr><th>Unit</th><th>MW</th><th>Cooling</th><th>Status</th></tr></thead>
                 <tbody>
@@ -157,9 +160,10 @@ export default function App() {
               <div className="fleet-stats">
                 <div><span className="muted">Nuclear online</span><b>{nucGW.toFixed(2)} GW</b></div>
                 <div><span className="muted">Exp. Beznau curtailment days</span><b>{res.nukes.some((n) => n.running && n.cooling === 'river') ? res.clim.riverHotDays.toFixed(0) : '–'}</b></div>
-                <div><span className="muted">PV installed</span><b>{p.pvGW} GW</b></div>
+                <div><span className="muted">PV assumed in {p.year} (slider)</span><b>{p.pvGW} GW</b></div>
                 <div><span className="muted">Hydro (storage + RoR)</span><b>~{NATIONAL.hydroGW} GW</b></div>
               </div>
+              </Section>
               <PvPanel />
 
             </div>

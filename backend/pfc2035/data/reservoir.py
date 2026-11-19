@@ -95,3 +95,42 @@ def weekly_from_csv(path) -> tuple[dict, str | None]:
     for y, g in d.groupby(d["date"].dt.year):
         out[str(y)] = [round(float(v) / 1000.0, 3) for v in g["total_gwh"].values]
     return out, d["date"].max().strftime("%Y-%m-%d")
+
+
+def hydro_status(path) -> dict:
+    """Latest Swiss reservoir state from the BFE CSV, compared with the same week of earlier complete years."""
+    from pathlib import Path
+
+    if path is None or not Path(path).exists():
+        return {}
+    d = pd.read_csv(path, parse_dates=["date"]).sort_values("date")
+    last = d.iloc[-1]
+    d["year"] = d["date"].dt.year
+    d["wk"] = d.groupby("year").cumcount()          # 0-based week index within the year (as in the chart)
+    k = int(d.iloc[-1]["wk"])
+    counts = d.groupby("year").size()
+    full_years = [y for y, n in counts.items() if n >= 52 and y != last["date"].year]
+    same = d[(d["year"].isin(full_years)) & (d["wk"] == k)]
+    regions = []
+    for key, label in [("valais", "Valais"), ("grisons", "Grisons"), ("ticino", "Ticino"), ("rest", "Rest of CH")]:
+        gwh, pct = float(last[f"{key}_gwh"]), float(last[f"{key}_pct"])
+        regions.append({"region": label, "gwh": gwh, "pct": pct, "capacity_gwh": round(gwh / pct * 100) if pct else None})
+    avg = float(same["total_gwh"].mean()) if len(same) else None
+    cur = d[d["year"] == last["date"].year]["total_gwh"].round(0).tolist()
+    avg_curve = [round(float(v), 0) for v in d[d["year"].isin(full_years)].groupby("wk")["total_gwh"].mean().values]
+    return {
+        "date": last["date"].strftime("%Y-%m-%d"),
+        "total_gwh": float(last["total_gwh"]),
+        "total_pct": float(last["total_pct"]),
+        "capacity_gwh": float(last["total_capacity_gwh"]),
+        "same_week_avg_gwh": round(avg, 0) if avg is not None else None,
+        "same_week_min_gwh": float(same["total_gwh"].min()) if len(same) else None,
+        "same_week_max_gwh": float(same["total_gwh"].max()) if len(same) else None,
+        "compare_years": [int(y) for y in full_years],
+        "regions": regions,
+        "rhine_actual_m3s": float(last["rhine_actual_m3s"]),
+        "rhine_longterm_m3s": float(last["rhine_longterm_m3s"]),
+        "rhine_pct": float(last["rhine_pct"]),
+        "curve_current_gwh": cur,
+        "curve_avg_gwh": avg_curve,
+    }

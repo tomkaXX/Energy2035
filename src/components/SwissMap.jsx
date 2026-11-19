@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { geoMercator, geoPath } from 'd3-geo';
 import { feature, mesh } from 'topojson-client';
 import { PLANTS, TYPE_META } from '../data/plants.js';
@@ -73,6 +73,20 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
   // PV per canton and batteries use the SAME scale as the plants: circle area ∝ MW
   const rPv = (mw) => r(mw);
   const [showInfo, setShowInfo] = useState(false);
+  const infoRef = useRef(null);
+  useEffect(() => { // close "Reading the map" on a click/tap outside it or on Escape
+    if (!showInfo) return undefined;
+    const onDown = (e) => { if (infoRef.current && !infoRef.current.contains(e.target)) setShowInfo(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setShowInfo(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showInfo]);
   const pvPoints = useMemo(() => {
     if (!geo || !pv) return { cantons: [], large: [], batteries: [] };
     const cantons = (pv.cantons || []).map((c) => {
@@ -148,7 +162,7 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
         })}
         {!geo && <text x={W / 2} y={H / 2} textAnchor="middle" className="map-label">Loading map…</text>}
       </svg>
-      <div className={`map-info ${showInfo ? 'open' : ''}`}>
+      <div className={`map-info ${showInfo ? 'open' : ''}`} ref={infoRef}>
         <button type="button" className="map-info-btn" aria-expanded={showInfo} onClick={() => setShowInfo((v) => !v)}>
           <span aria-hidden="true">ⓘ</span> Reading the map
         </button>
