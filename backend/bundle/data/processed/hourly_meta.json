@@ -2,8 +2,8 @@
   "source": "both",
   "synthetic": false,
   "start": "2023-01-01",
-  "end": "2026-01-01",
-  "rows": 26304,
+  "end": "2026-11-17",
+  "rows": 33984,
   "share_missing_before_fill": {
     "price_ch": 0.0,
     "ch_load": 0.0,
@@ -13,77 +13,77 @@
     "de_load": 0.0,
     "de_solar": 0.0,
     "de_wind": 0.0,
-    "fr_load": 0.0003,
-    "fr_nuclear": 0.0003,
+    "fr_load": 0.0002,
+    "fr_nuclear": 0.001,
     "it_load": 0.0,
     "it_solar": 0.0
   },
   "provenance_hours": {
     "price_ch": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "price_de": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "price_fr": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "price_it": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "ch_load": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "ch_nuclear": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "ch_solar": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "de_load": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "de_solar": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "de_wind": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "fr_load": {
-      "entsoe": 26296,
+      "entsoe": 33976,
       "energy-charts": 1
     },
     "fr_nuclear": {
-      "entsoe": 26296,
+      "entsoe": 33951,
       "energy-charts": 1
     },
     "it_load": {
-      "entsoe": 26304,
+      "entsoe": 33984,
       "energy-charts": 1
     },
     "it_solar": {
-      "entsoe": 26304,
-      "energy-charts": 1
+      "entsoe": 33983,
+      "energy-charts": 2
     },
     "ch_ror": {
-      "energy-charts": 26304
+      "energy-charts": 33984
     }
   },
   "provenance_share": {
     "entsoe": 0.952,
     "energy-charts": 0.048
   },
-  "built_at": "2026-11-18T13:22:39+00:00",
   "fuel_source": "daily TTF + EUA (data/csv)",
-  "reservoir": "BFE weekly bulletin (Monday 00:00), ch_reservoir_weekly.csv"
+  "reservoir": "BFE weekly bulletin (Monday 00:00), ch_reservoir_weekly.csv",
+  "built_at": "2026-11-19T14:03:52+00:00"
 }

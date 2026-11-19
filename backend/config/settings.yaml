@@ -8,7 +8,7 @@ data:
   #   synthetic     : offline demo data, for testing the pipeline only — NOT real prices
   source: both
   start: "2023-01-01"        # 2022 (gas crisis) is excluded on purpose; change to test
-  end: "2026-01-01"          # exclusive
+  end: "2026-11-17"          # exclusive — 2026 up to the latest BFE reservoir bulletin (16 Nov 2026)
   # historical gas & CO₂ prices (daily). CO₂ quotes every few days -> constant until the next quote.
   gas_csv: data/csv/EEX-TTF-Day-Ahead.csv
   co2_csv: data/csv/EUA_data_2016-2026.csv
@@ -18,7 +18,7 @@ data:
   reservoir_csv: data/csv/ch_reservoir_weekly.csv
 
 model:
-  test_start: "2025-07-01"   # hold-out period for the backtest
+  test_start: "2026-01-01"   # hold-out = 2026 (Jan–Nov): a full unseen year incl. the Hormuz gas shock
   num_boost_round: 800
   learning_rate: 0.04
   num_leaves: 31

@@ -113,6 +113,9 @@ def train(df: pd.DataFrame, data_meta: dict) -> dict:
     srmc = X["srmc_gas"].values
     y = df["price_ch"].values / srmc
     test_start = pd.Timestamp(ms["test_start"], tz="UTC")
+    if (X.index >= test_start).sum() < 24 * 30:  # dataset ends before the hold-out: use its last 6 months
+        test_start = (X.index[-1] - pd.Timedelta(days=183)).normalize()
+        print(f"  (hold-out {ms['test_start']} not in the data -> back-test on the last 6 months from {test_start:%Y-%m-%d})")
     tr, te = X.index < test_start, X.index >= test_start
     rounds = ms["num_boost_round"]
 

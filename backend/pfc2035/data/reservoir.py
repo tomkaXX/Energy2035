@@ -82,3 +82,16 @@ def climatology_from_csv(path, years=None) -> np.ndarray | None:
     clim = s.groupby(s.index.dayofyear).mean().reindex(range(1, 367)).interpolate().ffill().bfill()
     sm = pd.concat([clim.iloc[-7:], clim, clim.iloc[:7]]).rolling(15, center=True).mean().iloc[7:-7]
     return sm.values
+
+
+def weekly_from_csv(path) -> tuple[dict, str | None]:
+    """{year: [weekly TWh]} straight from the BFE CSV (all years, incl. the current partial one) + last date."""
+    from pathlib import Path
+
+    if path is None or not Path(path).exists():
+        return {}, None
+    d = pd.read_csv(path, parse_dates=["date"]).sort_values("date")
+    out = {}
+    for y, g in d.groupby(d["date"].dt.year):
+        out[str(y)] = [round(float(v) / 1000.0, 3) for v in g["total_gwh"].values]
+    return out, d["date"].max().strftime("%Y-%m-%d")

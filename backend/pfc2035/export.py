@@ -99,6 +99,18 @@ def factor1_analysis(hist: pd.DataFrame) -> dict:
     return res
 
 
+def _reservoir_chart(hist: pd.DataFrame, settings: dict) -> dict:
+    """Reservoir chart: every year in the BFE CSV (incl. the current year); else what is in the dataset."""
+    from .data import reservoir
+
+    weekly, last = reservoir.weekly_from_csv(resolve(settings["data"].get("reservoir_csv")))
+    if weekly:
+        return {"reservoir_weekly_twh": weekly, "reservoir_last_date": last,
+                "reservoir_source": "BFE weekly bulletin (Speicherinhalt)"}
+    return {"reservoir_weekly_twh": reservoir.weekly_by_year(hist), "reservoir_last_date": None,
+            "reservoir_source": "ENTSO-E A72"}
+
+
 def fuel_summary(scenarios: dict, hist: pd.DataFrame) -> dict:
     """Gas & CO₂: monthly history (actual years) and the 2035 monthly path of each scenario."""
     from .data import fuel
@@ -189,7 +201,7 @@ def run_all(hist: pd.DataFrame, data_meta: dict, with_sensitivity: bool = True) 
         "backtest": meta["backtest"],
         "chronos": chronos_bench.load_result(),
         "fuel": fuel_summary(sc_cfg["scenarios"], hist),
-        "reservoir_weekly_twh": __import__("pfc2035.data.reservoir", fromlist=["x"]).weekly_by_year(hist),
+        **_reservoir_chart(hist, settings),
         "sensitivity": sens,
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, allow_nan=False), encoding="utf-8")

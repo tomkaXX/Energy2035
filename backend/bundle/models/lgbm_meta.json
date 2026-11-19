@@ -390,8 +390,8 @@
     5.5785
   ],
   "ratio_clip": [
-    -1.1764996563273256,
-    2.683183384648345
+    -1.4879345183299315,
+    2.7081223381298813
   ],
   "quantile_models": [
     "q10",
@@ -400,14 +400,14 @@
   ],
   "trained_on": [
     "2023-01-01 00:00:00+00:00",
-    "2025-12-31 23:00:00+00:00"
+    "2026-11-16 23:00:00+00:00"
   ],
   "data": {
     "source": "both",
     "synthetic": false,
     "start": "2023-01-01",
-    "end": "2026-01-01",
-    "rows": 26304,
+    "end": "2026-11-17",
+    "rows": 33984,
     "share_missing_before_fill": {
       "price_ch": 0.0,
       "ch_load": 0.0,
@@ -417,145 +417,145 @@
       "de_load": 0.0,
       "de_solar": 0.0,
       "de_wind": 0.0,
-      "fr_load": 0.0003,
-      "fr_nuclear": 0.0003,
+      "fr_load": 0.0002,
+      "fr_nuclear": 0.001,
       "it_load": 0.0,
       "it_solar": 0.0
     },
     "provenance_hours": {
       "price_ch": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "price_de": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "price_fr": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "price_it": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "ch_load": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "ch_nuclear": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "ch_solar": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "de_load": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "de_solar": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "de_wind": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "fr_load": {
-        "entsoe": 26296,
+        "entsoe": 33976,
         "energy-charts": 1
       },
       "fr_nuclear": {
-        "entsoe": 26296,
+        "entsoe": 33951,
         "energy-charts": 1
       },
       "it_load": {
-        "entsoe": 26304,
+        "entsoe": 33984,
         "energy-charts": 1
       },
       "it_solar": {
-        "entsoe": 26304,
-        "energy-charts": 1
+        "entsoe": 33983,
+        "energy-charts": 2
       },
       "ch_ror": {
-        "energy-charts": 26304
+        "energy-charts": 33984
       }
     },
     "provenance_share": {
       "entsoe": 0.952,
       "energy-charts": 0.048
     },
-    "built_at": "2026-11-18T13:22:39+00:00",
     "fuel_source": "daily TTF + EUA (data/csv)",
-    "reservoir": "BFE weekly bulletin (Monday 00:00), ch_reservoir_weekly.csv"
+    "reservoir": "BFE weekly bulletin (Monday 00:00), ch_reservoir_weekly.csv",
+    "built_at": "2026-11-19T14:03:52+00:00"
   },
   "backtest": {
     "period": [
-      "2025-07-01 00:00:00+00:00",
-      "2025-12-31 23:00:00+00:00"
+      "2026-01-01 00:00:00+00:00",
+      "2026-11-16 23:00:00+00:00"
     ],
     "lightgbm": {
-      "mae": 17.028995641210027,
-      "rmse": 21.706814094910882,
-      "bias": -14.833315337168077,
-      "r2": 0.4560395494225067,
-      "neg_hours_true": 66,
-      "neg_hours_pred": 110,
-      "neg_recall": 0.8636363636363636,
-      "neg_precision": 0.5181818181818182
+      "mae": 27.9790341704267,
+      "rmse": 43.09632487441857,
+      "bias": -17.305606570686482,
+      "r2": 0.5944726701354479,
+      "neg_hours_true": 239,
+      "neg_hours_pred": 475,
+      "neg_recall": 0.9037656903765691,
+      "neg_precision": 0.45473684210526316
     },
     "naive_same_hour_last_week": {
-      "mae": 13.18870018115942,
-      "rmse": 20.577504034323713,
-      "bias": -0.9773822463768118,
-      "r2": 0.5111669709803804,
-      "neg_hours_true": 66,
-      "neg_hours_pred": 73,
-      "neg_recall": 0.4090909090909091,
-      "neg_precision": 0.3698630136986301
+      "mae": 26.183912109375,
+      "rmse": 40.47739471085219,
+      "bias": -3.3601816406250005,
+      "r2": 0.6422622601306818,
+      "neg_hours_true": 239,
+      "neg_hours_pred": 239,
+      "neg_recall": 0.3723849372384937,
+      "neg_precision": 0.3723849372384937
     },
     "naive_same_hour_yesterday": {
-      "mae": 12.139202898550725,
-      "rmse": 20.990113361344704,
-      "bias": -0.0244836956521739,
-      "r2": 0.49136678250914245,
-      "neg_hours_true": 66,
-      "neg_hours_pred": 66,
-      "neg_recall": 0.21212121212121213,
-      "neg_precision": 0.21212121212121213
+      "mae": 20.920343424479164,
+      "rmse": 34.96756974713851,
+      "bias": -0.4466936848958333,
+      "r2": 0.7330250247533209,
+      "neg_hours_true": 239,
+      "neg_hours_pred": 239,
+      "neg_recall": 0.41841004184100417,
+      "neg_precision": 0.41841004184100417
     },
     "note": "LightGBM sees the actual fundamentals of each hour (an 'ex-post' fundamental fit, like a PFC shape model), the naive models only see past prices."
   },
   "importance_by_feature": {
-    "srmc_gas": 20.278,
-    "de_residual": 10.937,
-    "gas_share": 8.123,
-    "it_residual": 7.215,
-    "ch_res_anom_twh": 5.676,
-    "ch_residual_d": 4.069,
-    "ch_res_fill_twh": 1.783,
-    "dow": 1.442,
-    "ch_ror": 1.271,
-    "hour": 1.248,
-    "ch_solar": 0.893,
-    "ch_nuclear": 0.676,
-    "fr_residual": 0.523,
-    "is_off": 0.514,
-    "neigh_residual_share": 0.228,
-    "ch_residual": 0.112,
-    "ch_load": 0.108,
-    "ch_wind": 0.103,
-    "neigh_residual_d": 0.091,
-    "de_res_share": 0.069
+    "srmc_gas": 30.394,
+    "de_residual": 11.014,
+    "gas_share": 8.4,
+    "it_residual": 7.623,
+    "ch_res_anom_twh": 7.058,
+    "ch_residual_d": 3.316,
+    "ch_res_fill_twh": 1.693,
+    "hour": 1.574,
+    "dow": 1.545,
+    "ch_solar": 1.319,
+    "ch_nuclear": 0.798,
+    "ch_ror": 0.766,
+    "is_off": 0.611,
+    "fr_residual": 0.45,
+    "neigh_residual_share": 0.306,
+    "neigh_residual_d": 0.141,
+    "ch_residual": 0.12,
+    "ch_wind": 0.117,
+    "ch_load": 0.061,
+    "de_res_share": 0.033
   },
   "importance_by_factor": {
-    "Interconnection & neighbours": 22.814,
-    "External market (gas, CO\u2082)": 18.071,
-    "Production mix": 7.856,
-    "Hydro storage (water value)": 7.533,
-    "Calendar / seasonality": 2.353,
-    "Consumption profile": 0.105
+    "External market (gas, CO\u2082)": 24.728,
+    "Interconnection & neighbours": 23.852,
+    "Hydro storage (water value)": 9.094,
+    "Production mix": 7.748,
+    "Calendar / seasonality": 2.707,
+    "Consumption profile": 0.058
   }
 }

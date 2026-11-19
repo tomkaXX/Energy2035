@@ -18,7 +18,7 @@ export function LineChart({ series, xLabels, height = 240, unit = '€/MWh', xTi
   const [hi, setHi] = useState(null);
   const W = 720, H = height, m = { l: 44, r: 12, t: 12, b: 26 };
   const n = series[0].values.length;
-  const all = series.flatMap((s) => s.values);
+  const all = series.flatMap((s) => s.values).filter((v) => v != null && !Number.isNaN(v)); // gaps allowed
   let min = Math.min(0, ...all), max = Math.max(...all);
   const ticks = niceTicks(min, max);
   min = Math.min(min, ticks[0]); max = Math.max(max, ticks[ticks.length - 1]);
@@ -46,14 +46,14 @@ export function LineChart({ series, xLabels, height = 240, unit = '€/MWh', xTi
         ) : null))}
         {refLine != null && <line x1={m.l} x2={W - m.r} y1={y(refLine)} y2={y(refLine)} className="refline" />}
         {series.map((s) => (
-          <path key={s.name} d={s.values.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${y(v)}`).join('')}
+          <path key={s.name} d={s.values.map((v, i) => (v == null ? '' : `${i && s.values[i - 1] != null ? 'L' : 'M'}${x(i)},${y(v)}`)).join('')}
             fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeDasharray={s.dash} />
         ))}
         {hi != null && (
           <g>
             <line x1={x(hi)} x2={x(hi)} y1={m.t} y2={H - m.b} className="crosshair" />
             {series.map((s) => (
-              <circle key={s.name} cx={x(hi)} cy={y(s.values[hi])} r="4" fill={s.color} className="ring" />
+              s.values[hi] == null ? null : <circle key={s.name} cx={x(hi)} cy={y(s.values[hi])} r="4" fill={s.color} className="ring" />
             ))}
           </g>
         )}
@@ -63,7 +63,7 @@ export function LineChart({ series, xLabels, height = 240, unit = '€/MWh', xTi
         <div className="tooltip" style={{ left: `${(x(hi) / W) * 100}%` }}>
           <div className="tt-title">{xLabels[hi]}</div>
           {series.map((s) => (
-            <div key={s.name} className="tt-row"><i style={{ background: s.color }} />{s.name}<b>{fmt(s.values[hi])} {unit}</b></div>
+            s.values[hi] == null ? null : <div key={s.name} className="tt-row"><i style={{ background: s.color }} />{s.name}<b>{fmt(s.values[hi])} {unit}</b></div>
           ))}
         </div>
       )}
