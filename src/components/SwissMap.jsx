@@ -29,11 +29,12 @@ function stressFor(p, clim, year, nukes) {
 const STATUS_LABEL = { good: 'Low', warning: 'Moderate', serious: 'High', critical: 'Very high' };
 const STATUS_ICON = { good: '●', warning: '▲', serious: '◆', critical: '✖' };
 
-export default function SwissMap({ year, clim, nukes, showStress, selected, onSelect }) {
+const ALL_LAYERS = { nuclear: true, hydro: true, pv: true, battery: true };
+
+export default function SwissMap({ year, clim, nukes, showStress, selected, onSelect, layers = ALL_LAYERS }) {
   const [topo, setTopo] = useState(null);
   const [hover, setHover] = useState(null);
   const [pv, setPv] = useState(null);         // PV by canton + large plants (public/pfc2035/pv_map.json)
-  const [showPv, setShowPv] = useState(true);
   const [pvHover, setPvHover] = useState(null);
 
   useEffect(() => {
@@ -68,7 +69,8 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
       });
   }, [geo, clim, year, nukes]);
 
-  const active = hover || plants.find((p) => p.id === selected);
+  const visiblePlants = plants.filter((p) => (p.type === 'nuclear' ? layers.nuclear : layers.hydro));
+  const active = hover || visiblePlants.find((p) => p.id === selected);
 
   // PV per canton and batteries use the SAME scale as the plants: circle area ∝ MW
   const rPv = (mw) => r(mw);
@@ -116,13 +118,13 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
             {geo.lakes.map((d, i) => <path key={i} d={d} className="map-lake" />)}
           </g>
         )}
-        {showPv && [...pvPoints.cantons].sort((a, b) => b.capacity_mw - a.capacity_mw).map((c) => (
+        {layers.pv && [...pvPoints.cantons].sort((a, b) => b.capacity_mw - a.capacity_mw).map((c) => (
           <g key={c.canton_code} transform={`translate(${c.x},${c.y})`} className="pv-canton"
              onMouseEnter={() => setPvHover({ kind: 'canton', ...c })} onMouseLeave={() => setPvHover(null)}>
             <circle r={rPv(c.capacity_mw)} className="pv-dot" />
           </g>
         ))}
-        {plants.map((p) => (
+        {visiblePlants.map((p) => (
           <g key={p.id} transform={`translate(${p.x},${p.y})`} className="plant"
              onMouseEnter={() => setHover(p)} onMouseLeave={() => setHover(null)}
              onClick={() => onSelect(p.id === selected ? null : p.id)}>
@@ -136,10 +138,10 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
             {p.pumped && !p.inactive && <circle r={Math.max(2, r(p.mw) * 0.35)} className="pumped-core" />}
           </g>
         ))}
-        {plants.filter((p) => p.type === 'nuclear' && p.mw > 900).map((p) => (
+        {visiblePlants.filter((p) => p.type === 'nuclear' && p.mw > 900).map((p) => (
           <text key={p.id + 'l'} x={p.x + r(p.mw) + 6} y={p.y + 4} className="map-label">{p.name}</text>
         ))}
-        {showPv && pvPoints.large.map((l) => {
+        {layers.pv && pvPoints.large.map((l) => {
           const s = 5.5;
           return (
             <g key={l.name} transform={`translate(${l.x},${l.y})`} className="pv-large"
@@ -150,7 +152,7 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
             </g>
           );
         })}
-        {showPv && pvPoints.batteries.map((b) => {
+        {layers.battery && pvPoints.batteries.map((b) => {
           const h = r(b.power_mw) * 0.89; // square with the same area as a circle of that MW
           return (
             <g key={b.name} transform={`translate(${b.x},${b.y})`} className="bat"
@@ -188,7 +190,6 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
       </div>
       {pv && (
         <div className="map-legend">
-          <label className="chk"><input type="checkbox" checked={showPv} onChange={(e) => setShowPv(e.target.checked)} /> Solar PV</label>
           <span className="lg"><i className="lg-pv" />PV installed per canton (at the capital, {pv.cantons_date?.split('-').reverse().join('.')}) · same MW scale as plants</span>
           <span className="lg"><i className="lg-pv-large" />Large PV plant</span>
           <span className="lg"><i className="lg-pv-large planned" />planned</span>

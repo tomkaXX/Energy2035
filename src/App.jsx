@@ -48,6 +48,9 @@ export default function App() {
   const [month, setMonth] = useState(5);
   const [week, setWeek] = useState(0);
   const [showStress, setShowStress] = useState(true);
+  // map layers (only affect the map, not the tables)
+  const [layers, setLayers] = useState({ nuclear: true, hydro: true, pv: true, battery: true });
+  const toggleLayer = (k) => (e) => setLayers((l) => ({ ...l, [k]: e.target.checked }));
   const [selected, setSelected] = useState(null);
 
   const set = (k) => (v) => setP((o) => ({ ...o, [k]: v }));
@@ -136,9 +139,15 @@ export default function App() {
             <div className="panel">
               <div className="panel-h">
                 <h2>Generation map · nuclear, hydro &amp; solar</h2>
-                <label className="chk"><input type="checkbox" checked={showStress} onChange={(e) => setShowStress(e.target.checked)} /> Climate stress</label>
+                <span className="map-toggles" role="group" aria-label="Map layers">
+                  {[['nuclear', 'Nuclear', 'var(--series-2)'], ['hydro', 'Hydro', 'var(--series-1)'], ['pv', 'PV', 'var(--series-4)'], ['battery', 'Battery', '#6250d6']].map(([k, label, c]) => (
+                    <label key={k} className="chk"><input type="checkbox" checked={layers[k]} onChange={toggleLayer(k)} style={{ accentColor: c }} /> {label}</label>
+                  ))}
+                  <span className="map-toggles-sep" aria-hidden="true" />
+                  <label className="chk"><input type="checkbox" checked={showStress} onChange={(e) => setShowStress(e.target.checked)} /> Climate stress</label>
+                </span>
               </div>
-              <SwissMap year={p.year} clim={res.clim} nukes={res.nukes} showStress={showStress} selected={selected} onSelect={setSelected} />
+              <SwissMap year={p.year} clim={res.clim} nukes={res.nukes} showStress={showStress} layers={layers} selected={selected} onSelect={setSelected} />
               <p className="foot">Main plants with indicative capacities (Swiss fleet today: ~{NATIONAL.hydroGW} GW hydro, ~{NATIONAL.hydroTWh} TWh/yr; {NATIONAL.nuclearGW} GW nuclear). Hover or tap a plant for details.</p>
             </div>
 
