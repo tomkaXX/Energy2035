@@ -193,3 +193,6 @@ select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; b
 .lg-pv { background: var(--series-4); }
 .lg-pv-large { background: var(--series-4); border: 1.2px solid var(--text-primary); border-radius: 2px !important; transform: rotate(45deg); width: 9px !important; height: 9px !important; }
 .lg-pv-large.planned { background: var(--surface-1); border: 2px dashed var(--series-4); }
+.pv-tbl tr { cursor: default; }
+.pv-tbl .num { text-align: right; white-space: nowrap; }
+.pv-tbl td b { color: var(--text-primary); font-weight: 600; }

@@ -101,4 +101,29 @@ def map_json() -> dict:
     if f and f.exists():
         d = pd.read_csv(f)
         out["large"] = json.loads(d.to_json(orient="records"))
+    # national key figures (Swissolar «Statistik Sonnenenergie», latest year-end stock)
+    f = resolve(st.get("pv_national_csv"))
+    if f and f.exists():
+        n = pd.read_csv(f, parse_dates=["as_of"])
+        stock = n[n["kind"] == "stock_end_of_year"].sort_values("as_of")
+        if len(stock):
+            last = stock.iloc[-1]
+            prev = n[n["as_of"].dt.year == last["as_of"].year - 1]
+            new_prev = float(prev["new_mw_in_year"].iloc[0]) if len(prev) and pd.notna(prev["new_mw_in_year"].iloc[0]) else None
+            out["national"] = {
+                "year": int(last["as_of"].year),
+                "installed_mw": float(last["installed_mw"]),
+                "systems": int(last["systems"]) if pd.notna(last["systems"]) else None,
+                "share_of_consumption_pct": float(last["share_of_consumption_pct"]) if pd.notna(last.get("share_of_consumption_pct")) else None,
+                "new_mw": float(last["new_mw_in_year"]) if pd.notna(last["new_mw_in_year"]) else None,
+                "new_mw_prev": new_prev,
+                "source": str(last["source"]),
+            }
+    # ENTSO-E vs official production (from the dataset meta written by `python -m pfc2035 pv`)
+    from ..config import HOURLY_META
+    if HOURLY_META.exists():
+        meta = json.loads(HOURLY_META.read_text(encoding="utf-8"))
+        corr = meta.get("pv_correction") or {}
+        out["correction"] = [{"year": int(y), **v} for y, v in sorted(corr.items()) if "entsoe_twh" in v]
+        out["specific_yield_kwh_per_kwp"] = meta.get("pv_specific_yield_kwh_per_kwp")
     return out

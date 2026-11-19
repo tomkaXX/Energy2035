@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import SwissMap from './components/SwissMap.jsx';
+import PvPanel from './components/PvPanel.jsx';
 import { LineChart, Heatmap, MiniBars } from './components/Charts.jsx';
 import { computePFC, defaultParams, toCSV, MONTHS } from './model/pfc.js';
 import { INDICATORS, SCENARIOS, indicatorAt } from './data/climate.js';
@@ -159,6 +160,7 @@ export default function App() {
                 <div><span className="muted">PV installed</span><b>{p.pvGW} GW</b></div>
                 <div><span className="muted">Hydro (storage + RoR)</span><b>~{NATIONAL.hydroGW} GW</b></div>
               </div>
+              <PvPanel />
               <h2 style={{ marginTop: 16 }}>Reading the map</h2>
               <ul className="howto">
                 <li><b>Orange</b> nuclear units sit on the Aare and Rhine — river temperature matters for the river-cooled Beznau units.</li>
