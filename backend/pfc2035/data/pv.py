@@ -119,6 +119,13 @@ def map_json() -> dict:
                 "new_mw_prev": new_prev,
                 "source": str(last["source"]),
             }
+    # battery storage: national stock (behind the meter) and large facilities
+    f = resolve(st.get("battery_national_csv"))
+    if f and f.exists():
+        out["battery_national"] = json.loads(pd.read_csv(f).to_json(orient="records"))
+    f = resolve(st.get("battery_facilities_csv"))
+    if f and f.exists():
+        out["battery_facilities"] = json.loads(pd.read_csv(f).to_json(orient="records"))
     # ENTSO-E vs official production (from the dataset meta written by `python -m pfc2035 pv`)
     from ..config import HOURLY_META
     if HOURLY_META.exists():

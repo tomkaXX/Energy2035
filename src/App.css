@@ -186,7 +186,7 @@ select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; b
 /* solar PV on the map */
 .pv-canton, .pv-large { cursor: pointer; }
 .pv-canton .hit, .pv-large .hit { fill: transparent; }
-.pv-dot { fill: var(--series-4); stroke: var(--surface-1); stroke-width: 1.5; }
+.pv-dot { fill: var(--series-4); fill-opacity: 0.55; stroke: var(--series-4); stroke-width: 1.2; }
 .pv-canton:hover .pv-dot { stroke: var(--text-primary); }
 .pv-diamond { fill: var(--series-4); stroke: var(--text-primary); stroke-width: 1.2; }
 .pv-diamond.planned { fill: var(--surface-1); stroke: var(--series-4); stroke-width: 2; stroke-dasharray: 3 2; }
@@ -196,3 +196,19 @@ select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; b
 .pv-tbl tr { cursor: default; }
 .pv-tbl .num { text-align: right; white-space: nowrap; }
 .pv-tbl td b { color: var(--text-primary); font-weight: 600; }
+.bat { cursor: pointer; }
+.bat .hit { fill: transparent; }
+.bat-sq { fill: #6250d6; stroke: var(--surface-1); stroke-width: 1.5; }
+.bat-sq.planned { fill: var(--surface-1); fill-opacity: 0.6; stroke: #6250d6; stroke-width: 2; stroke-dasharray: 3 2; }
+.bat:hover .bat-sq { stroke: var(--text-primary); }
+.lg-bat { background: #6250d6; border-radius: 2px !important; }
+.lg-bat.planned { background: var(--surface-1); border: 2px dashed #6250d6; }
+.lg-pv { background: color-mix(in srgb, var(--series-4) 55%, transparent); border: 1.2px solid var(--series-4); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .bat-sq { fill: #9085e9; } :root:not([data-theme='light']) .bat-sq.planned { stroke: #9085e9; fill: var(--surface-1); } }
+/* reading-the-map info box, bottom-left of the map */
+.map-canvas { position: relative; }
+.map-info { position: absolute; left: 8px; bottom: 8px; max-width: 340px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.08); font-size: 12px; z-index: 4; }
+.map-info-btn { background: transparent; border: 0; padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+.map-info.open .map-info-btn { color: var(--text-primary); }
+.map-info .howto { margin: 0; padding: 0 12px 10px 26px; }
+.map-row { align-items: start; }

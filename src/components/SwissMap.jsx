@@ -70,10 +70,11 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
 
   const active = hover || plants.find((p) => p.id === selected);
 
-  // canton dot: radius from watts per capita (322–1,884 W) -> ~3–6 px
-  const rPv = (w) => 1.5 + Math.sqrt(w) * 0.105;
+  // PV per canton and batteries use the SAME scale as the plants: circle area ∝ MW
+  const rPv = (mw) => r(mw);
+  const [showInfo, setShowInfo] = useState(false);
   const pvPoints = useMemo(() => {
-    if (!geo || !pv) return { cantons: [], large: [] };
+    if (!geo || !pv) return { cantons: [], large: [], batteries: [] };
     const cantons = (pv.cantons || []).map((c) => {
       const [x, y] = geo.projection([c.capital_lon, c.capital_lat]);
       return { ...c, x, y };
@@ -82,12 +83,17 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
       const [x, y] = geo.projection([l.lon, l.lat]);
       return { ...l, x, y };
     });
-    return { cantons, large };
+    const batteries = (pv.battery_facilities || []).map((b) => {
+      const [x, y] = geo.projection([b.lon, b.lat]);
+      return { ...b, x, y };
+    }).sort((a, b) => b.power_mw - a.power_mw);
+    return { cantons, large, batteries };
   }, [geo, pv]);
   const fmtN = (v, d = 0) => (v == null || Number.isNaN(v) ? '–' : Number(v).toLocaleString('de-CH', { maximumFractionDigits: d, minimumFractionDigits: d }));
 
   return (
     <div className="map-wrap">
+      <div className="map-canvas">
       <svg viewBox={`0 0 ${W} ${H}`} className="map" role="img" aria-label="Map of Switzerland with nuclear and hydro power plants">
         {geo && (
           <g>
@@ -96,6 +102,12 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
             {geo.lakes.map((d, i) => <path key={i} d={d} className="map-lake" />)}
           </g>
         )}
+        {showPv && [...pvPoints.cantons].sort((a, b) => b.capacity_mw - a.capacity_mw).map((c) => (
+          <g key={c.canton_code} transform={`translate(${c.x},${c.y})`} className="pv-canton"
+             onMouseEnter={() => setPvHover({ kind: 'canton', ...c })} onMouseLeave={() => setPvHover(null)}>
+            <circle r={rPv(c.capacity_mw)} className="pv-dot" />
+          </g>
+        ))}
         {plants.map((p) => (
           <g key={p.id} transform={`translate(${p.x},${p.y})`} className="plant"
              onMouseEnter={() => setHover(p)} onMouseLeave={() => setHover(null)}
@@ -113,13 +125,6 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
         {plants.filter((p) => p.type === 'nuclear' && p.mw > 900).map((p) => (
           <text key={p.id + 'l'} x={p.x + r(p.mw) + 6} y={p.y + 4} className="map-label">{p.name}</text>
         ))}
-        {showPv && pvPoints.cantons.map((c) => (
-          <g key={c.canton_code} transform={`translate(${c.x},${c.y})`} className="pv-canton"
-             onMouseEnter={() => setPvHover({ kind: 'canton', ...c })} onMouseLeave={() => setPvHover(null)}>
-            <circle r={rPv(c.watts_per_capita) + 4} className="hit" />
-            <circle r={rPv(c.watts_per_capita)} className="pv-dot" />
-          </g>
-        ))}
         {showPv && pvPoints.large.map((l) => {
           const s = 5.5;
           return (
@@ -131,8 +136,33 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
             </g>
           );
         })}
+        {showPv && pvPoints.batteries.map((b) => {
+          const h = r(b.power_mw) * 0.89; // square with the same area as a circle of that MW
+          return (
+            <g key={b.name} transform={`translate(${b.x},${b.y})`} className="bat"
+               onMouseEnter={() => setPvHover({ kind: 'battery', ...b })} onMouseLeave={() => setPvHover(null)}>
+              <rect x={-h - 3} y={-h - 3} width={2 * h + 6} height={2 * h + 6} className="hit" />
+              <rect x={-h} y={-h} width={2 * h} height={2 * h} rx="2" className={`bat-sq ${b.status !== 'operating' ? 'planned' : ''}`} />
+            </g>
+          );
+        })}
         {!geo && <text x={W / 2} y={H / 2} textAnchor="middle" className="map-label">Loading map…</text>}
       </svg>
+      <div className={`map-info ${showInfo ? 'open' : ''}`}>
+        <button type="button" className="map-info-btn" aria-expanded={showInfo} onClick={() => setShowInfo((v) => !v)}>
+          <span aria-hidden="true">ⓘ</span> Reading the map
+        </button>
+        {showInfo && (
+          <ul className="howto">
+            <li><b>Orange</b> nuclear units sit on the Aare and Rhine — river temperature matters for the river-cooled Beznau units.</li>
+            <li><b>Blue</b> Alpine storage &amp; pumped-storage plants provide seasonal and daily flexibility; their inflows depend on snow and glacier melt.</li>
+            <li><b>Green</b> run-of-river plants on the Rhine, Aare and Rhône follow river flow — high in May–August, low in winter and in dry years.</li>
+            <li>The coloured <b>ring</b> shows climate stress for the selected year and scenario.</li>
+            <li><b>Yellow</b> circles: installed PV per canton; diamonds: large PV plants; <b>violet</b> squares: battery storage. Circle and square area ∝ MW, on one scale for all technologies.</li>
+          </ul>
+        )}
+      </div>
+      </div>
 
       <div className="map-legend">
         {Object.entries(TYPE_META).map(([k, v]) => (
@@ -145,9 +175,11 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
       {pv && (
         <div className="map-legend">
           <label className="chk"><input type="checkbox" checked={showPv} onChange={(e) => setShowPv(e.target.checked)} /> Solar PV</label>
-          <span className="lg"><i className="lg-pv" />PV per canton capital · size ∝ W per inhabitant (CH Ø 946 W, {pv.cantons_date?.split('-').reverse().join('.')})</span>
+          <span className="lg"><i className="lg-pv" />PV installed per canton (at the capital, {pv.cantons_date?.split('-').reverse().join('.')}) · same MW scale as plants</span>
           <span className="lg"><i className="lg-pv-large" />Large PV plant</span>
           <span className="lg"><i className="lg-pv-large planned" />planned</span>
+          <span className="lg"><i className="lg-bat" />Battery storage (MW)</span>
+          <span className="lg"><i className="lg-bat planned" />planned / under construction</span>
         </div>
       )}
       {showStress && (
@@ -161,7 +193,13 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
 
       {pvHover && (
         <div className="plant-card">
-          {pvHover.kind === 'canton' ? <>
+          {pvHover.kind === 'battery' ? <>
+            <div className="pc-head"><strong>{pvHover.name}</strong><span className="muted">{pvHover.canton_code}</span></div>
+            <div className="pc-row"><span>Battery · {pvHover.technology} · {pvHover.status}{pvHover.year ? ` ${pvHover.year}` : ''}</span>
+              <span><b>{fmtN(pvHover.power_mw, 1)} MW</b>{pvHover.energy_mwh ? ` · ${fmtN(pvHover.energy_mwh)} MWh` : ''}</span></div>
+            <div className="pc-row muted"><span>{pvHover.operator}</span></div>
+            <p className="pc-note">{pvHover.note}</p>
+          </> : pvHover.kind === 'canton' ? <>
             <div className="pc-head"><strong>{pvHover.canton_en} ({pvHover.canton_code})</strong><span className="muted">#{pvHover.rank} of 26</span></div>
             <div className="pc-row"><span>Solar PV per inhabitant</span><span><b>{fmtN(pvHover.watts_per_capita)} W</b></span></div>
             <div className="pc-row"><span>Installed capacity</span><span><b>{fmtN(pvHover.capacity_mw, 1)} MW</b></span></div>

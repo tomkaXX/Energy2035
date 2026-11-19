@@ -161,13 +161,7 @@ export default function App() {
                 <div><span className="muted">Hydro (storage + RoR)</span><b>~{NATIONAL.hydroGW} GW</b></div>
               </div>
               <PvPanel />
-              <h2 style={{ marginTop: 16 }}>Reading the map</h2>
-              <ul className="howto">
-                <li><b>Orange</b> nuclear units sit on the Aare and Rhine — river temperature matters for the river-cooled Beznau units.</li>
-                <li><b>Blue</b> Alpine storage &amp; pumped-storage plants provide seasonal and daily flexibility; their inflows depend on snow and glacier melt.</li>
-                <li><b>Green</b> run-of-river plants on the Rhine, Aare and Rhône follow river flow — high in May–August, low in winter and in dry years.</li>
-                <li>The coloured <b>ring</b> shows climate stress for the selected year and scenario.</li>
-              </ul>
+
             </div>
           </section>
 

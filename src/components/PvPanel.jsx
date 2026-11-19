@@ -41,7 +41,31 @@ export default function PvPanel() {
           </tbody>
         </table>
       </>}
+      {pv.battery_national?.length > 0 && <>
+        <h2 style={{ marginTop: 16 }}>Battery storage</h2>
+        <table className="tbl pv-tbl">
+          <thead><tr><th>Behind the grid connection point</th><th className="num">Storage</th></tr></thead>
+          <tbody>
+            {pv.battery_national.map((b) => (
+              <tr key={b.as_of}><td>{b.kind === 'forecast' ? `Forecast end of ${b.as_of.slice(0, 4)}` : `End of ${b.as_of.slice(0, 4)}`}</td>
+                <td className="num"><b>{Number(b.storage_gwh).toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} GWh</b></td></tr>
+            ))}
+          </tbody>
+        </table>
+        {pv.battery_facilities?.length > 0 && (
+          <table className="tbl pv-tbl">
+            <thead><tr><th>Large facilities</th><th className="num">Power</th><th className="num">Energy</th><th>Status</th></tr></thead>
+            <tbody>
+              {[...pv.battery_facilities].sort((a, b) => b.power_mw - a.power_mw).map((b) => (
+                <tr key={b.name}><td>{b.name} ({b.canton_code})</td><td className="num">{n0(b.power_mw)} MW</td>
+                  <td className="num">{b.energy_mwh ? `${n0(b.energy_mwh)} MWh` : '–'}</td><td className="muted">{b.status}{b.year ? ` ${b.year}` : ''}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </>}
       <p className="foot">
+        Battery storage: Swissolar expects growth to 2.5 GWh behind the meter by end of 2026; facilities from operator releases (Axpo, Primeo/INTILION, Alpiq, FlexBase).
         Key figures: Swissolar «Statistik Sonnenenergie {nat?.year}», collected each year on behalf of the SFOE and published in early July (edition of 10.07.2026), via ecoen.ch.
         ENTSO-E reports only part of Swiss PV; the model keeps its hourly profile and rescales each year to average installed capacity × {n0(pv.specific_yield_kwh_per_kwp ?? 950)} kWh/kWp.
       </p>
