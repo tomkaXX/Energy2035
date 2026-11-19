@@ -86,9 +86,15 @@ def apply_scenario(y: pd.DataFrame, p: dict) -> pd.DataFrame:
             d[f"{c}_{k}"] = d[f"{c}_{k}"] * nb[f"{c}_{k}_factor"]
     d["fr_nuclear"] = d["fr_nuclear"] * nb["fr_nuclear_factor"]
 
-    # --- market
-    d["gas_eur_mwh"] = mk["gas_eur_mwh"]
-    d["co2_eur_t"] = mk["co2_eur_t"]
+    # --- market: scenario annual average × daily shape of an illustrative year (see settings.yaml)
+    from .data import fuel  # noqa: PLC0415
+
+    st = load_settings()["scenario_run"]
+    doy = np.minimum(loc.dayofyear.values, 366) - 1
+    g_year = mk.get("gas_profile_year", st.get("fuel_profile_year_gas", 2024))
+    c_year = mk.get("co2_profile_year", st.get("fuel_profile_year_co2", 2024))
+    d["gas_eur_mwh"] = mk["gas_eur_mwh"] * fuel.profile(g_year, "gas_eur_mwh")[doy]
+    d["co2_eur_t"] = mk["co2_eur_t"] * fuel.profile(c_year, "co2_eur_t")[doy]
 
     # --- new flexibility smooths Swiss residual load within each day
     rl = (d["ch_load"] - d["ch_solar"] - d["ch_wind"] - d["ch_nuclear"] - d["ch_ror"]).values

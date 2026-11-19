@@ -327,6 +327,33 @@ export default function Scenarios2035({ view = 'scenarios' }) {
         </div>
       </section>
 
+      {summary.fuel?.scenarios_monthly && (
+        <section className="grid2">
+          {[['gas', 'Gas price (TTF day-ahead)', '€/MWh'], ['co2', 'CO₂ price (EU ETS)', '€/t']].map(([k, title, unit]) => {
+            const hm = summary.fuel.historical_monthly;
+            const dashes = ['2 3', '6 3', '1 0'];
+            const hist = Object.keys(hm).filter((y) => +y < 2026).map((y, i) => ({ name: `Actual ${y}`, color: 'var(--text-muted)', values: hm[y][k], dash: dashes[i % 3] }));
+            return (
+              <div className="panel" key={k}>
+                <div className="panel-h"><h2>{title} · history and 2035</h2><span className="muted">monthly average, {unit}</span></div>
+                {(() => {
+                  const series = [...hist, ...sc.map((s) => ({ name: `${s.short} 2035`, color: s.color, values: summary.fuel.scenarios_monthly[s.id][k] }))];
+                  return <>
+                    <LineChart xLabels={MONTHS} xTickEvery={1} unit={unit} series={series} />
+                    <div className="line-legend">
+                      {series.map((x) => (
+                        <span key={x.name} className="lg"><svg width="22" height="8" aria-hidden="true"><line x1="1" x2="21" y1="4" y2="4" stroke={x.color} strokeWidth="2" strokeDasharray={x.dash} /></svg>{x.name}</span>
+                      ))}
+                    </div>
+                  </>;
+                })()}
+                <p className="foot">Grey: actual {Object.keys(hm).filter((y) => +y < 2026).join(', ')} ({summary.fuel.source}). 2035: each scenario's annual average × the daily shape of {k === 'gas' ? summary.fuel.profile_year_gas : summary.fuel.profile_year_co2} (within-year drift removed){k === 'co2' ? '; CO₂ is held constant between quote dates' : ''}.</p>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
       <section className="panel">
         <div className="panel-h"><h2>Hourly price shape · month × hour · {cur.name}</h2><span className="muted">centre colour = annual average</span></div>
         <Heatmap grid={cur.heatmap} base={cur.kpis.annual_avg.mean} />
@@ -473,8 +500,8 @@ export default function Scenarios2035({ view = 'scenarios' }) {
         <table className="tbl res">
           <thead><tr><th>Model</th><th className="num">MAE €/MWh</th><th className="num">RMSE</th><th className="num">R²</th><th className="num">Neg. hours (pred / actual)</th><th>What it sees</th></tr></thead>
           <tbody>
-            <tr><td><b>LightGBM (linear trees)</b></td><td className="num">{f1(bt.lightgbm.mae)}</td><td className="num">{f1(bt.lightgbm.rmse)}</td><td className="num">{bt.lightgbm.r2.toFixed(2)}</td><td className="num">{bt.lightgbm.neg_hours_pred} / {bt.lightgbm.neg_hours_true}</td><td className="muted">actual fundamentals of each hour (scenario model)</td></tr>
-            {ch && <tr><td><b>Chronos</b> <span className="muted">{ch.model_id}</span></td><td className="num">{f1(ch.chronos.mae)}</td><td className="num">{f1(ch.chronos.rmse)}</td><td className="num">{ch.chronos.r2.toFixed(2)}</td><td className="num">{ch.chronos.neg_hours_pred} / {ch.chronos.neg_hours_true}</td><td className="muted">only past prices, 24 h ahead, last {ch.days} days</td></tr>}
+            <tr><td><b>LightGBM (monotone)</b></td><td className="num">{f1(bt.lightgbm.mae)}</td><td className="num">{f1(bt.lightgbm.rmse)}</td><td className="num">{bt.lightgbm.r2.toFixed(2)}</td><td className="num">{bt.lightgbm.neg_hours_pred} / {bt.lightgbm.neg_hours_true}</td><td className="muted">actual fundamentals of each hour (scenario model)</td></tr>
+            {ch && <tr><td><b>Chronos</b> <span className="muted">{ch.model_id} · {ch.period[0].slice(0, 10)} → {ch.period[1].slice(0, 10)}</span></td><td className="num">{f1(ch.chronos.mae)}</td><td className="num">{f1(ch.chronos.rmse)}</td><td className="num">{ch.chronos.r2.toFixed(2)}</td><td className="num">{ch.chronos.neg_hours_pred} / {ch.chronos.neg_hours_true}</td><td className="muted">only past prices, 24 h ahead, last {ch.days} days</td></tr>}
             <tr><td>Naive: same hour last week</td><td className="num">{f1(bt.naive_same_hour_last_week.mae)}</td><td className="num">{f1(bt.naive_same_hour_last_week.rmse)}</td><td className="num">{bt.naive_same_hour_last_week.r2.toFixed(2)}</td><td className="num">{bt.naive_same_hour_last_week.neg_hours_pred} / {bt.naive_same_hour_last_week.neg_hours_true}</td><td className="muted">past prices</td></tr>
             <tr><td>Naive: same hour yesterday</td><td className="num">{f1(bt.naive_same_hour_yesterday.mae)}</td><td className="num">{f1(bt.naive_same_hour_yesterday.rmse)}</td><td className="num">{bt.naive_same_hour_yesterday.r2.toFixed(2)}</td><td className="num">{bt.naive_same_hour_yesterday.neg_hours_pred} / {bt.naive_same_hour_yesterday.neg_hours_true}</td><td className="muted">past prices</td></tr>
           </tbody>
@@ -493,8 +520,8 @@ export default function Scenarios2035({ view = 'scenarios' }) {
       <section className="panel notes">
         <h2>Method in five steps</h2>
         <ol>
-          <li><b>Data</b>: hourly CH/DE/FR/IT day-ahead prices, Swiss load, PV, wind, nuclear, run-of-river and neighbours' load/PV/wind/nuclear ({summary.data.source}), plus monthly gas and CO₂ prices.</li>
-          <li><b>Model</b>: LightGBM with linear leaves predicts price ÷ gas-plant marginal cost from Swiss and neighbouring residual load, renewables share, fuel cost and calendar; quantile models give P10/P90.</li>
+          <li><b>Data</b>: hourly CH/DE/FR/IT day-ahead prices, Swiss load, PV, wind, nuclear, run-of-river and neighbours' load/PV/wind/nuclear ({summary.data.source}), plus daily TTF gas and EUA CO₂ prices (2035: scenario level × the {summary.fuel?.profile_year_gas ?? 2024} daily shape).</li>
+          <li><b>Model</b>: LightGBM with physical monotone constraints predicts price ÷ gas-plant marginal cost from Swiss and neighbouring residual load, renewables share, daily gas (TTF) and CO₂ (EUA) prices and calendar; quantile models give P10/P90.</li>
           <li><b>2035 year</b>: each historical weather year is moved to the 2035 calendar and rescaled to the scenario (demand + EV/heat pumps/cooling, PV, nuclear, hydro, neighbours, fuel). New batteries and demand response flatten the residual load before pricing.</li>
           <li><b>Structural effects</b> outside the data — reduced border capacity, PV curtailment floors — are applied as transparent adjustments.</li>
           <li><b>Uncertainty</b>: results are averaged over weather years (range shown) and stress-tested one parameter at a time.</li>

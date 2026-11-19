@@ -12,7 +12,8 @@ import shutil
 from .config import HOURLY_META, HOURLY_PARQUET, MODELS_DIR, ROOT, load_settings, resolve
 
 CODE = ["pfc2035", "api", "config"]
-FILES = ["requirements-api.txt", "data/manual/fuel_prices_monthly.csv"]
+FILES = ["requirements-api.txt", "data/manual/fuel_prices_monthly.csv",
+         "data/csv/EEX-TTF-Day-Ahead.csv", "data/csv/EUA_data_2016-2026.csv"]  # gas/CO₂ for 2035 profiles
 IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".env", "synthetic.py")
 
 README = """# Energy2035 backend (generated — do not edit here)
@@ -39,7 +40,10 @@ def bundle(target=None, with_quantiles: bool = False) -> None:
         if dst.exists():
             shutil.rmtree(dst)
         shutil.copytree(ROOT / d, dst, ignore=IGNORE)
-    for f in FILES:
+    st = load_settings()["data"]
+    for f in FILES + [st.get("gas_csv"), st.get("co2_csv")]:
+        if not f or not (ROOT / f).exists():
+            continue
         (target / f).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / f, target / f)
 

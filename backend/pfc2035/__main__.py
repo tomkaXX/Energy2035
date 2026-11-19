@@ -1,6 +1,7 @@
 """Command line:  python -m pfc2035 <command>
 
   check      test the ENTSO-E token (one day of Swiss prices)
+  fuel       re-attach daily gas/CO₂ prices (data/csv) to the dataset, no download
   data       download/build the hourly dataset      [--source energy-charts|entsoe|both|synthetic]
   train      train LightGBM (+ back-test, driver importance)
   chronos    Chronos foundation-model benchmark (optional install)
@@ -16,7 +17,7 @@ import time
 
 def main() -> None:
     ap = argparse.ArgumentParser(prog="pfc2035", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["check", "data", "train", "chronos", "scenarios", "all", "bundle"])
+    ap.add_argument("command", choices=["check", "fuel", "data", "train", "chronos", "scenarios", "all", "bundle"])
     ap.add_argument("--source", choices=["energy-charts", "entsoe", "both", "synthetic"], default=None,
                     help="override data.source in config/settings.yaml")
     ap.add_argument("--start", default=None)
@@ -29,6 +30,11 @@ def main() -> None:
     if a.command == "check":
         from .data.entsoe_source import check
         check()
+        return
+
+    if a.command == "fuel":
+        from .data.build import refresh_fuel
+        refresh_fuel()
         return
 
     if a.command == "bundle":

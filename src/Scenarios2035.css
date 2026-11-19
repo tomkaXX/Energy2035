@@ -68,3 +68,4 @@ code, .code { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; f
 .scen-mix .mixpie { max-width: 230px; }
 .mix-note { margin: 4px 0 16px; text-align: center; }
 .whatif-base { margin-bottom: 16px; }
+.line-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--text-secondary); margin-top: 6px; }

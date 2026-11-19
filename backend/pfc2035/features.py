@@ -16,8 +16,16 @@ FACTOR_GROUPS = {
                                      "neigh_residual_share", "neigh_residual_d"],
     "Consumption profile": ["ch_load"],
     "Production mix": ["ch_solar", "ch_wind", "ch_nuclear", "ch_ror", "ch_residual", "ch_residual_d"],
-    "External market (gas, CO₂)": ["srmc_gas"],
-    "Calendar / seasonality": ["hour", "dow", "is_off", "doy_sin", "doy_cos"],
+    "External market (gas, CO₂)": ["srmc_gas", "gas_share"],
+    "Calendar / seasonality": ["hour", "dow", "is_off"],
+}
+# Physical direction of each driver -> LightGBM monotone constraints (+1 price rises with it, −1 falls).
+# Keeps the model physically sensible when 2035 values leave the historical range. Day-of-year features
+# were dropped: they let the model memorise year-specific levels (2023 crisis) instead of learning drivers.
+MONOTONE = {
+    "ch_load": 1, "ch_residual": 1, "ch_residual_d": 1, "de_residual": 1, "fr_residual": 1, "it_residual": 1,
+    "neigh_residual_share": 1, "neigh_residual_d": 1, "srmc_gas": 1,
+    "ch_solar": -1, "ch_wind": -1, "ch_nuclear": -1, "ch_ror": -1, "de_res_share": -1,
 }
 FEATURES = [f for g in FACTOR_GROUPS.values() for f in g]
 
@@ -91,18 +99,34 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     x["ch_residual_d"] = x.groupby("local_date")["ch_residual"].transform("mean")
     x["neigh_residual_d"] = x.groupby("local_date")["neigh_residual_share"].transform("mean")
     x["srmc_gas"] = srmc_gas(df["gas_eur_mwh"], df["co2_eur_t"])
+    # fuel vs. carbon part of the gas-plant cost (0..1): lets the model tell a gas shock from a CO₂ shock
+    x["gas_share"] = (df["gas_eur_mwh"] / GAS_EFF) / x["srmc_gas"].clip(lower=1e-6)
     return x
 
 
-def add_fuel(df: pd.DataFrame, fuel_csv) -> pd.DataFrame:
-    fuel = pd.read_csv(fuel_csv, comment="#")
-    fuel["month"] = fuel["month"].astype(str)
-    key = df.index.tz_convert("Europe/Zurich").strftime("%Y-%m")
-    m = fuel.set_index("month")
+def add_fuel(df: pd.DataFrame, fuel_csv=None) -> pd.DataFrame:
+    """Attach gas (EUR/MWh) and CO₂ (EUR/t) prices to every hour.
+
+    Uses the daily TTF/EUA files (data/csv, see pfc2035/data/fuel.py); falls back to the monthly
+    placeholder CSV only if those files are missing.
+    """
+    from .data import fuel  # noqa: PLC0415
+
     out = df.copy()
-    missing = sorted(set(key) - set(m.index))
-    if len(missing) > 1:
-        print(f"  ! fuel prices missing for {missing[:3]}... -> forward/back filled")
-    out["gas_eur_mwh"] = pd.Series(key, index=df.index).map(m["gas_eur_mwh"]).ffill().bfill().values
-    out["co2_eur_t"] = pd.Series(key, index=df.index).map(m["co2_eur_t"]).ffill().bfill().values
+    h = fuel.hourly(df.index)
+    if h is not None:
+        out["gas_eur_mwh"] = h["gas_eur_mwh"].values
+        out["co2_eur_t"] = h["co2_eur_t"].values
+        out.attrs["fuel_source"] = "daily TTF + EUA (data/csv)"
+        return out
+    if fuel_csv is None:
+        raise FileNotFoundError("no gas/CO₂ data: add data/csv files or data.fuel_prices_csv")
+    print("  ! daily gas/CO₂ files not found -> using monthly placeholder CSV")
+    m = pd.read_csv(fuel_csv, comment="#")
+    m["month"] = m["month"].astype(str)
+    m = m.set_index("month")
+    key = pd.Series(df.index.tz_convert("Europe/Zurich").strftime("%Y-%m"), index=df.index)
+    out["gas_eur_mwh"] = key.map(m["gas_eur_mwh"]).ffill().bfill().values
+    out["co2_eur_t"] = key.map(m["co2_eur_t"]).ffill().bfill().values
+    out.attrs["fuel_source"] = "monthly placeholder CSV"
     return out

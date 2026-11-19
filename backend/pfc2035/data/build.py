@@ -77,6 +77,7 @@ def build(source: str | None = None, start: str | None = None, end: str | None =
     for c in ["ch_wind", "fr_wind", "it_wind", "ch_pump"]:
         df[c] = df[c].fillna(0.0)
     df = add_fuel(df, fuel_csv)
+    fuel_source = df.attrs.get("fuel_source")
     df = df.dropna(subset=REQUIRED)
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
@@ -88,6 +89,7 @@ def build(source: str | None = None, start: str | None = None, end: str | None =
         "share_missing_before_fill": gaps,
         "provenance_hours": {c: v for c, v in prov.items() if c in REQUIRED + ["price_de", "price_fr", "price_it"]},
         "provenance_share": _share(prov),
+        "fuel_source": fuel_source,
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     HOURLY_META.write_text(json.dumps(meta, indent=2), encoding="utf-8")
@@ -95,6 +97,20 @@ def build(source: str | None = None, start: str | None = None, end: str | None =
     print("Data provenance (share of values per source):", meta["provenance_share"])
     for c in ["price_ch", "ch_load", "ch_solar", "ch_nuclear"]:
         print(f"  {c:<12} {prov.get(c)}")
+    return df
+
+
+def refresh_fuel() -> pd.DataFrame:
+    """Re-attach gas/CO₂ prices to the existing dataset (no new download)."""
+    df, meta = load()
+    st = load_settings()["data"]
+    df = add_fuel(df.drop(columns=["gas_eur_mwh", "co2_eur_t"], errors="ignore"), resolve(st["fuel_prices_csv"]))
+    meta["fuel_source"] = df.attrs.get("fuel_source")
+    df.to_parquet(HOURLY_PARQUET)
+    HOURLY_META.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    y = df.index.tz_convert("Europe/Zurich").year
+    print(f"Fuel prices attached ({meta['fuel_source']}):")
+    print(df.groupby(y)[["gas_eur_mwh", "co2_eur_t"]].mean().round(1).to_string())
     return df
 
 

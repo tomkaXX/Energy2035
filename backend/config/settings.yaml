@@ -9,7 +9,10 @@ data:
   source: both
   start: "2023-01-01"        # 2022 (gas crisis) is excluded on purpose; change to test
   end: "2026-01-01"          # exclusive
-  fuel_prices_csv: data/manual/fuel_prices_monthly.csv
+  # historical gas & CO₂ prices (daily). CO₂ quotes every few days -> constant until the next quote.
+  gas_csv: data/csv/EEX-TTF-Day-Ahead.csv
+  co2_csv: data/csv/EUA_data_2016-2026.csv
+  fuel_prices_csv: data/manual/fuel_prices_monthly.csv   # fallback only, if the files above are missing
 
 model:
   test_start: "2025-07-01"   # hold-out period for the backtest
@@ -17,12 +20,18 @@ model:
   learning_rate: 0.04
   num_leaves: 31
   min_data_in_leaf: 60
-  linear_tree: true          # linear leaves let the model extrapolate to 2035 levels of PV
+  linear_tree: false         # linear leaves extrapolate further but back-tested worse on real data
+  monotone: true             # physical direction per driver (features.MONOTONE)
   quantiles: [0.1, 0.9]
 
 scenario_run:
   target_year: 2035
   weather_years: [2023, 2024, 2025]   # historical years re-used as 2035 weather; results are averaged
+  # 2035 gas & CO₂: the daily SHAPE of one illustrative year, scaled to each scenario's annual average
+  # (market.gas_eur_mwh / market.co2_eur_t). Avoid 2020 (Covid), 2021-2023 (energy crisis), 2026 (Hormuz).
+  fuel_profile_year_gas: 2024
+  fuel_profile_year_co2: 2024
+  fuel_profile_detrend: true          # remove the within-year drift of that year, keep seasonality
   price_floor: -500                   # EPEX harmonised min/max clearing price
   price_cap: 4000
 

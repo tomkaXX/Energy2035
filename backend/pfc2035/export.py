@@ -99,6 +99,33 @@ def factor1_analysis(hist: pd.DataFrame) -> dict:
     return res
 
 
+def fuel_summary(scenarios: dict, hist: pd.DataFrame) -> dict:
+    """Gas & CO₂: monthly history (actual years) and the 2035 monthly path of each scenario."""
+    from .data import fuel
+
+    st = load_settings()["scenario_run"]
+    yrs = sorted({int(y) for y in hist.index.tz_convert("Europe/Zurich").year})
+    hist_m = fuel.monthly([y for y in yrs if y < 2026] + [st.get("fuel_profile_year_gas", 2024)])
+    idx = pd.date_range("2035-01-01", "2036-01-01", freq="D", inclusive="left")
+    doy = np.minimum(idx.dayofyear.values, 366) - 1
+    g_shape = fuel.profile(st.get("fuel_profile_year_gas", 2024), "gas_eur_mwh")[doy]
+    c_shape = fuel.profile(st.get("fuel_profile_year_co2", 2024), "co2_eur_t")[doy]
+    sc_m = {}
+    for sid, sc in scenarios.items():
+        mk = sc["params"]["market"]
+        g = pd.Series(mk["gas_eur_mwh"] * g_shape, index=idx).groupby(idx.month).mean()
+        c = pd.Series(mk["co2_eur_t"] * c_shape, index=idx).groupby(idx.month).mean()
+        sc_m[sid] = {"gas": R(g.values, 2), "co2": R(c.values, 2)}
+    return {
+        "source": "TTF day-ahead (EEX) and EU ETS EUA, data/csv",
+        "profile_year_gas": st.get("fuel_profile_year_gas", 2024),
+        "profile_year_co2": st.get("fuel_profile_year_co2", 2024),
+        "historical_monthly": hist_m,
+        "historical_yearly": fuel.yearly_stats(),
+        "scenarios_monthly": sc_m,
+    }
+
+
 def sensitivity(model: PriceModel, hist: pd.DataFrame, scenarios: dict, sens: list[dict]) -> dict:
     out = {}
     for sid, sc in scenarios.items():
@@ -161,9 +188,10 @@ def run_all(hist: pd.DataFrame, data_meta: dict, with_sensitivity: bool = True) 
         "importance_by_feature": meta["importance_by_feature"],
         "backtest": meta["backtest"],
         "chronos": chronos_bench.load_result(),
+        "fuel": fuel_summary(sc_cfg["scenarios"], hist),
         "sensitivity": sens,
     }
-    (out_dir / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    (out_dir / "summary.json").write_text(json.dumps(summary, allow_nan=False), encoding="utf-8")
     write_results_table(summary, out_dir)
 
     react_dir = resolve(settings["export"].get("react_public_dir"))

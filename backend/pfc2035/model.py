@@ -2,8 +2,9 @@
 
 Target = Swiss price / gas-plant marginal cost (SRMC). Working in this ratio makes the fuel effect
 proportional to how often gas sets the price: a +30 % gas price lifts evening peaks, but barely moves
-solar-surplus hours that clear near zero. Linear leaves (linear_tree) let the model extrapolate to
-2035 residual-load levels that were never observed; predictions are clipped to the observed ratio range.
+solar-surplus hours that clear near zero. Monotone constraints keep each driver's direction
+physical (more residual load -> higher price, more PV/nuclear -> lower price) so 2035 values outside the
+historical range cannot flip the sign; predictions are clipped to the observed ratio range.
 """
 from __future__ import annotations
 
@@ -14,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 from .config import MODELS_DIR, load_settings
-from .features import FACTOR_GROUPS, FEATURES, build_features
+from .features import FACTOR_GROUPS, FEATURES, MONOTONE, build_features
 
 MEAN_FILE = MODELS_DIR / "lgbm_mean.txt"
 META_FILE = MODELS_DIR / "lgbm_meta.json"
@@ -35,6 +36,9 @@ def _params(ms: dict, objective="regression", alpha=None, linear=True) -> dict:
     }
     if linear:
         p.update(linear_tree=True, linear_lambda=1.0)
+    if ms.get("monotone", True) and objective != "quantile":  # LightGBM: not available for quantile loss
+        p["monotone_constraints"] = [MONOTONE.get(f, 0) for f in FEATURES]
+        p["monotone_constraints_method"] = "advanced"
     if alpha is not None:
         p["alpha"] = alpha
     return p
