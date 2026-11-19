@@ -17,6 +17,7 @@ FACTOR_GROUPS = {
     "Consumption profile": ["ch_load"],
     "Production mix": ["ch_solar", "ch_wind", "ch_nuclear", "ch_ror", "ch_residual", "ch_residual_d"],
     "External market (gas, CO₂)": ["srmc_gas", "gas_share"],
+    "Hydro storage (water value)": ["ch_res_fill_twh", "ch_res_anom_twh"],
     "Calendar / seasonality": ["hour", "dow", "is_off"],
 }
 # Physical direction of each driver -> LightGBM monotone constraints (+1 price rises with it, −1 falls).
@@ -26,6 +27,7 @@ MONOTONE = {
     "ch_load": 1, "ch_residual": 1, "ch_residual_d": 1, "de_residual": 1, "fr_residual": 1, "it_residual": 1,
     "neigh_residual_share": 1, "neigh_residual_d": 1, "srmc_gas": 1,
     "ch_solar": -1, "ch_wind": -1, "ch_nuclear": -1, "ch_ror": -1, "de_res_share": -1,
+    "ch_res_fill_twh": -1, "ch_res_anom_twh": -1,  # more water in the reservoirs -> cheaper
 }
 FEATURES = [f for g in FACTOR_GROUPS.values() for f in g]
 
@@ -99,6 +101,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     x["ch_residual_d"] = x.groupby("local_date")["ch_residual"].transform("mean")
     x["neigh_residual_d"] = x.groupby("local_date")["neigh_residual_share"].transform("mean")
     x["srmc_gas"] = srmc_gas(df["gas_eur_mwh"], df["co2_eur_t"])
+    # reservoir state (NaN if not downloaded — LightGBM then ignores it)
+    for c in ["ch_res_fill_twh", "ch_res_anom_twh"]:
+        x[c] = df[c].values if c in df else np.nan
     # fuel vs. carbon part of the gas-plant cost (0..1): lets the model tell a gas shock from a CO₂ shock
     x["gas_share"] = (df["gas_eur_mwh"] / GAS_EFF) / x["srmc_gas"].clip(lower=1e-6)
     return x

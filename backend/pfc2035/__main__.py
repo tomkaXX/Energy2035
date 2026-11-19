@@ -1,6 +1,8 @@
 """Command line:  python -m pfc2035 <command>
 
   check      test the ENTSO-E token (one day of Swiss prices)
+  reservoir-pdf  extract BFE reservoir PDFs (data/pdf) to data/csv/ch_reservoir_weekly.csv and attach
+  reservoir  attach Swiss reservoir filling (BFE CSV, else ENTSO-E) to the dataset, no full re-download
   fuel       re-attach daily gas/CO₂ prices (data/csv) to the dataset, no download
   data       download/build the hourly dataset      [--source energy-charts|entsoe|both|synthetic]
   train      train LightGBM (+ back-test, driver importance)
@@ -15,9 +17,22 @@ import argparse
 import time
 
 
+def _venv_hint() -> None:
+    """Warn when the project's .venv exists but another Python is running (missing packages)."""
+    import sys
+    from pathlib import Path
+
+    venv = Path(__file__).resolve().parents[1] / ".venv"
+    if venv.exists() and Path(sys.prefix).resolve() != venv.resolve():
+        print(f"! Running with {sys.executable}, not the project venv.\n"
+              f"  Use:  .\\.venv\\Scripts\\Activate.ps1   then   python -m pfc2035 ...\n"
+              f"  or:   .\\.venv\\Scripts\\python.exe -m pfc2035 ...\n")
+
+
 def main() -> None:
+    _venv_hint()
     ap = argparse.ArgumentParser(prog="pfc2035", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["check", "fuel", "data", "train", "chronos", "scenarios", "all", "bundle"])
+    ap.add_argument("command", choices=["check", "reservoir-pdf", "reservoir", "fuel", "data", "train", "chronos", "scenarios", "all", "bundle"])
     ap.add_argument("--source", choices=["energy-charts", "entsoe", "both", "synthetic"], default=None,
                     help="override data.source in config/settings.yaml")
     ap.add_argument("--start", default=None)
@@ -30,6 +45,18 @@ def main() -> None:
     if a.command == "check":
         from .data.entsoe_source import check
         check()
+        return
+
+    if a.command == "reservoir-pdf":
+        from .data.bfe_reservoir import extract
+        from .data.build import refresh_reservoir
+        extract()
+        refresh_reservoir()
+        return
+
+    if a.command == "reservoir":
+        from .data.build import refresh_reservoir
+        refresh_reservoir()
         return
 
     if a.command == "fuel":

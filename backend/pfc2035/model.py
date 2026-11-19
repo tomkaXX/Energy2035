@@ -101,6 +101,14 @@ class PriceModel:
 
 def train(df: pd.DataFrame, data_meta: dict) -> dict:
     ms = load_settings()["model"]
+    from .data import reservoir
+
+    from .config import resolve
+
+    clim = reservoir.climatology_from_csv(resolve(load_settings()["data"].get("reservoir_csv")))
+    if clim is None:  # no BFE CSV: average of the training years
+        clim = reservoir.climatology(df)
+    df = reservoir.add_anomaly(df, clim)
     X = build_features(df)
     srmc = X["srmc_gas"].values
     y = df["price_ch"].values / srmc
@@ -145,6 +153,7 @@ def train(df: pd.DataFrame, data_meta: dict) -> dict:
 
     meta = {
         "features": FEATURES,
+        "reservoir_climatology_twh": None if clim is None else [round(float(v), 4) for v in clim],
         "ratio_clip": [lo, hi],
         "quantile_models": list(quant),
         "trained_on": [str(X.index[0]), str(X.index[-1])],

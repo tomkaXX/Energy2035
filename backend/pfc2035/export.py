@@ -189,6 +189,7 @@ def run_all(hist: pd.DataFrame, data_meta: dict, with_sensitivity: bool = True) 
         "backtest": meta["backtest"],
         "chronos": chronos_bench.load_result(),
         "fuel": fuel_summary(sc_cfg["scenarios"], hist),
+        "reservoir_weekly_twh": __import__("pfc2035.data.reservoir", fromlist=["x"]).weekly_by_year(hist),
         "sensitivity": sens,
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, allow_nan=False), encoding="utf-8")

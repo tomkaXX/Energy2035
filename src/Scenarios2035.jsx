@@ -517,6 +517,24 @@ export default function Scenarios2035({ view = 'scenarios' }) {
         <p className="foot">{bt.note} Chronos answers "what will tomorrow look like?"; only the fundamentals model can answer "what if PV doubles?", which is why it drives the 2035 scenarios.</p>
       </section>
 
+      {summary.reservoir_weekly_twh && Object.keys(summary.reservoir_weekly_twh).length > 0 && (
+        <section className="panel">
+          <div className="panel-h"><h2>Swiss reservoir filling · model input</h2><span className="muted">weekly, TWh stored (ENTSO-E)</span></div>
+          {(() => {
+            const rw = summary.reservoir_weekly_twh;
+            const ys = Object.keys(rw);
+            const n = Math.min(...ys.map((y) => rw[y].length));
+            const pal = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)'];
+            const series = ys.map((y, i) => ({ name: y, color: pal[i % pal.length], values: rw[y].slice(0, n) }));
+            return <>
+              <LineChart xLabels={Array.from({ length: n }, (_, i) => `W${i + 1}`)} xTickEvery={4} unit="TWh" series={series} />
+              <div className="line-legend">{series.map((x) => <span key={x.name} className="lg"><i style={{ background: x.color, borderRadius: 2 }} />{x.name}</span>)}</div>
+            </>;
+          })()}
+          <p className="foot">Water stored in Swiss dams ("water value"): low filling before winter means storage plants bid higher and winter prices rise. The model uses the filling and its deviation from the average year; for 2035 the weather year's filling is scaled by each scenario's <code>reservoir_factor</code>.</p>
+        </section>
+      )}
+
       <section className="panel notes">
         <h2>Method in five steps</h2>
         <ol>

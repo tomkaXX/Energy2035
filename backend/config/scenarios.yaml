@@ -30,6 +30,7 @@ defaults: &defaults
     nuclear_availability_factor: 1.0   # 1.0 = availability of the reference year
     hydro_ror_factor: 1.0          # run-of-river energy multiplier
     summer_drought_factor: 1.0     # extra multiplier on Jul-Sep run-of-river (<1 = dry summers)
+    reservoir_factor: 1.0          # reservoir filling vs the weather year (<1 = less water stored)
     battery_gw: 1.0
     battery_hours: 2.0
     battery_efficiency: 0.88
@@ -141,6 +142,7 @@ scenarios:
         nuclear_availability_factor: 0.8   # long outages of ageing units
         hydro_ror_factor: 0.95
         summer_drought_factor: 0.8
+        reservoir_factor: 0.85     # hot dry summers -> less water stored for winter
         battery_gw: 0.5
         battery_hours: 2.0
         battery_efficiency: 0.88

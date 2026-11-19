@@ -79,6 +79,8 @@ def apply_scenario(y: pd.DataFrame, p: dict) -> pd.DataFrame:
     d["ch_nuclear"] = d["ch_nuclear"] * (ch["nuclear_gw"] / nuc_ref_gw) * ch["nuclear_availability_factor"]
     drought = np.where(np.isin(mon, [7, 8, 9]), ch["summer_drought_factor"], 1.0)
     d["ch_ror"] = d["ch_ror"] * ch["hydro_ror_factor"] * drought
+    if "ch_res_fill_twh" in d:  # reservoir state of the weather year, scaled (dry/wet 2035)
+        d["ch_res_fill_twh"] = d["ch_res_fill_twh"] * ch.get("reservoir_factor", 1.0)
 
     # --- neighbours
     for c in ["de", "fr", "it"]:
@@ -189,6 +191,10 @@ def run_scenario(model: PriceModel, hist: pd.DataFrame, params: dict, weather_ye
     for wy in weather_years:
         y = year_2035(hist, wy, st["target_year"])
         d = apply_scenario(y, params)
+        clim = model.meta.get("reservoir_climatology_twh")
+        if clim is not None and "ch_res_fill_twh" in d:
+            from .data import reservoir
+            d = reservoir.add_anomaly(d, np.asarray(clim))
         X = build_features(d)
         pr = model.predict_frame(X)
         price = structural_adjustments(pr["price"].values, d, params, st["price_floor"], st["price_cap"])

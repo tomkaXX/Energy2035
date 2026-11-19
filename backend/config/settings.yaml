@@ -13,6 +13,9 @@ data:
   gas_csv: data/csv/EEX-TTF-Day-Ahead.csv
   co2_csv: data/csv/EUA_data_2016-2026.csv
   fuel_prices_csv: data/manual/fuel_prices_monthly.csv   # fallback only, if the files above are missing
+  # Swiss reservoir content, weekly (Monday 00:00). Built from the BFE PDF bulletins in data/pdf with
+  #   python -m pfc2035 reservoir-pdf      (ENTSO-E A72 is used only if this file is missing)
+  reservoir_csv: data/csv/ch_reservoir_weekly.csv
 
 model:
   test_start: "2025-07-01"   # hold-out period for the backtest

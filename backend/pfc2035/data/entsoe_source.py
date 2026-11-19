@@ -124,11 +124,13 @@ def check() -> None:
         "load (A65)": {"documentType": "A65", "processType": "A16", "outBiddingZone_Domain": ch},
         "generation (A75)": {"documentType": "A75", "processType": "A16", "in_Domain": ch},
         "flows DE->CH (A11)": {"documentType": "A11", "in_Domain": ch, "out_Domain": "10Y1001A1001A82H"},
+        "reservoir fill (A72)": {"documentType": "A72", "processType": "A16", "in_Domain": ch},
     }
     print(f"Endpoint {URL}, day {day:%Y-%m-%d}")
     for label, params in tests.items():
         try:
-            r = requests.get(URL, params={**params, "securityToken": key, "periodStart": p0, "periodEnd": p1}, timeout=60)
+            q0 = (day - pd.Timedelta(days=21)).strftime("%Y%m%d0000") if params["documentType"] == "A72" else p0
+            r = requests.get(URL, params={**params, "securityToken": key, "periodStart": q0, "periodEnd": p1}, timeout=60)
             body = r.text
             ok = r.status_code == 200 and "Acknowledgement_MarketDocument" not in body
             print(f"  {'OK ' if ok else 'ERR'} {label:<20} HTTP {r.status_code}, {len(body):,} bytes")
@@ -136,6 +138,33 @@ def check() -> None:
                 print("      " + _mask(body[:400]).replace("\n", " "))
         except requests.RequestException as e:
             print(f"  ERR {label:<20} {type(e).__name__}: {_mask(str(e))[:200]}")
+
+
+def fetch_reservoir(start: str, end: str) -> pd.Series | None:
+    """Swiss aggregated reservoir filling (A72), weekly MWh, cached per year."""
+    key = entsoe_key()
+    if not key:
+        print("  (no ENTSOE_API_KEY -> no reservoir data)")
+        return None
+    from entsoe import EntsoePandasClient
+
+    client = EntsoePandasClient(api_key=key)
+    parts = []
+    years = range(pd.Timestamp(start).year, (pd.Timestamp(end) - pd.Timedelta(seconds=1)).year + 1)
+    for y in years:
+        # start a week early so the first days of the year can be interpolated
+        s0 = max(pd.Timestamp(start, tz="Europe/Zurich"), pd.Timestamp(f"{y}-01-01", tz="Europe/Zurich")) - pd.Timedelta(days=8)
+        s1 = min(pd.Timestamp(end, tz="Europe/Zurich"), pd.Timestamp(f"{y + 1}-01-01", tz="Europe/Zurich")) + pd.Timedelta(days=8)
+        df = _cached(f"ch_reservoir_{y}", lambda a, b: client.query_aggregate_water_reservoirs_and_hydro_storage("CH", start=a, end=b), s0, s1)
+        if df is not None:
+            parts.append(df.iloc[:, 0])
+    if not parts:
+        return None
+    s = pd.concat(parts).sort_index()
+    s = s[~s.index.duplicated(keep="last")]
+    print(f"  reservoir filling CH: {len(s)} weekly values, {s.index[0]:%Y-%m-%d} .. {s.index[-1]:%Y-%m-%d}, "
+          f"{s.min() / 1e6:.1f}–{s.max() / 1e6:.1f} TWh")
+    return s
 
 
 def fetch(start: str, end: str) -> pd.DataFrame:

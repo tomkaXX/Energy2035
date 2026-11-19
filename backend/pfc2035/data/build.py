@@ -57,6 +57,9 @@ def build(source: str | None = None, start: str | None = None, end: str | None =
     start, end = start or st["start"], end or st["end"]
     fuel_csv = resolve(st["fuel_prices_csv"])
     df = _fetch(source, start, end, fuel_csv)
+    if source != "synthetic" and "ch_res_fill_twh" not in df:
+        df = _attach_reservoir(df, start, end)
+    reservoir_source = df.attrs.get("reservoir_source")
     prov = df.attrs.get("provenance") or {c: {source: int(df[c].notna().sum())} for c in df.columns}
 
     full = pd.date_range(start, end, freq="1h", tz="UTC", inclusive="left")
@@ -90,6 +93,7 @@ def build(source: str | None = None, start: str | None = None, end: str | None =
         "provenance_hours": {c: v for c, v in prov.items() if c in REQUIRED + ["price_de", "price_fr", "price_it"]},
         "provenance_share": _share(prov),
         "fuel_source": fuel_source,
+        "reservoir": reservoir_source,
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     HOURLY_META.write_text(json.dumps(meta, indent=2), encoding="utf-8")
@@ -97,6 +101,52 @@ def build(source: str | None = None, start: str | None = None, end: str | None =
     print("Data provenance (share of values per source):", meta["provenance_share"])
     for c in ["price_ch", "ch_load", "ch_solar", "ch_nuclear"]:
         print(f"  {c:<12} {prov.get(c)}")
+    return df
+
+
+def _reservoir_weekly(start: str, end: str) -> tuple[pd.Series | None, str | None]:
+    """Weekly Swiss reservoir content (MWh). BFE CSV (from the PDF bulletins) first, ENTSO-E A72 second."""
+    st = load_settings()["data"]
+    f = resolve(st.get("reservoir_csv"))
+    if f is not None and f.exists():
+        d = pd.read_csv(f, parse_dates=["date"])
+        # BFE values are Monday 00:00 local time
+        s = pd.Series(d["total_gwh"].values * 1000.0, index=d["date"].dt.tz_localize("Europe/Zurich"))
+        return s, f"BFE weekly bulletin (Monday 00:00), {f.name}"
+    from .entsoe_source import fetch_reservoir
+
+    try:
+        return fetch_reservoir(start, end), "ENTSO-E A72 weekly aggregated filling"
+    except Exception as e:  # noqa: BLE001
+        print(f"  ! reservoir data skipped: {type(e).__name__}: {e}")
+        return None, None
+
+
+def _attach_reservoir(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
+    from . import reservoir
+
+    weekly, src = _reservoir_weekly(start, end)
+    if weekly is None or weekly.empty:
+        return df
+    df.attrs["reservoir_source"] = src
+    out = df.copy()
+    out[reservoir.COL] = reservoir.to_hourly(weekly, out.index).values
+    out.attrs["reservoir_source"] = src
+    return out
+
+
+def refresh_reservoir() -> pd.DataFrame:
+    """Download only the Swiss reservoir filling (ENTSO-E) and attach it to the existing dataset."""
+    df, meta = load()
+    df = _attach_reservoir(df.drop(columns=["ch_res_fill_twh"], errors="ignore"), meta["start"], meta["end"])
+    if "ch_res_fill_twh" not in df:
+        raise SystemExit("No reservoir data attached — run  python -m pfc2035 reservoir-pdf  or check the ENTSO-E token")
+    meta["reservoir"] = df.attrs.get("reservoir_source")
+    df.to_parquet(HOURLY_PARQUET)
+    HOURLY_META.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    y = df.index.tz_convert("Europe/Zurich").year
+    print("Reservoir filling attached (TWh): ")
+    print(df.groupby(y)["ch_res_fill_twh"].agg(["mean", "min", "max"]).round(2).to_string())
     return df
 
 
