@@ -152,7 +152,7 @@ export default function Scenarios2035({ view = 'scenarios' }) {
   useEffect(() => {
     if (api.ok) return undefined;
     const ping = () => fetch(`${API_URL}/api/health`).then((r) => r.json())
-      .then((j) => setApi({ ok: !!j.ok, checked: true, error: j.ok ? null : j.error }))
+      .then((j) => setApi({ ok: !!j.ok, checked: true, error: j.ok ? null : j.error, trained: j.model_trained_on?.[1] }))
       .catch(() => setApi((a) => ({ ...a, ok: false, checked: true })));
     ping();
     const t = setInterval(ping, 5000);
@@ -420,7 +420,7 @@ export default function Scenarios2035({ view = 'scenarios' }) {
       {view === 'whatif' && <>
       <section className="panel whatif-base">
         <div className="panel-h">
-          <h2>Start from scenario</h2>
+          <h2>Start from 2035 scenario</h2>
           <div className="seg small" role="radiogroup" aria-label="Base scenario">
             {sc.map((s) => (
               <button key={s.id} role="radio" aria-checked={sel === s.id} className={sel === s.id ? 'on' : ''}
@@ -433,7 +433,7 @@ export default function Scenarios2035({ view = 'scenarios' }) {
 
       <section className="grid2">
         <div className="panel">
-          <div className="panel-h"><h2>What-if · start from {cur.short}</h2>
+          <div className="panel-h"><h2>What-if 2035 · start from {cur.short}</h2>
             <span className={api.ok ? 'pill ok-pill' : 'pill'}>{api.ok ? 'API connected' : api.checked ? 'API offline' : 'checking API…'}</span></div>
           {api.ok ? (
             <>
@@ -469,20 +469,30 @@ export default function Scenarios2035({ view = 'scenarios' }) {
           )}
         </div>
         <div className="panel">
-          <div className="panel-h"><h2>Custom result</h2></div>
+          <div className="panel-h"><h2>Custom result {custom?.target_year ?? 2035}</h2></div>
           {!custom && <p className="muted">Move sliders and press "Run custom scenario".</p>}
           {custom?.error && <p className="foot">Error: {custom.error}</p>}
           {custom && !custom.error && (
             <>
-              <table className="tbl res">
-                <thead><tr><th>Output</th><th className="num">{cur.short}</th><th className="num">Custom</th><th className="num">Δ</th></tr></thead>
-                <tbody>
-                  {['annual_avg', 'winter_avg', 'summer_avg', 'neg_hours', 'hours_above_100', 'solar_capture', 'daily_spread'].map((k) => (
-                    <tr key={k}><td>{kl[k].label}</td><td className="num">{f1(cur.kpis[k].mean)}</td><td className="num"><b>{f1(custom.kpis[k].mean)}</b></td>
-                      <td className="num">{sign(custom.kpis[k].mean - cur.kpis[k].mean)}</td></tr>
-                  ))}
-                </tbody>
-              </table>
+              {(() => {
+                // compare with the base scenario computed by the same API run (same model + weather years);
+                // fall back to the published numbers for older APIs
+                const base = custom.baseline_kpis ?? cur.kpis;
+                return (
+                  <table className="tbl res">
+                    <thead><tr><th>Output (2035)</th><th className="num">{cur.short}</th><th className="num">Custom</th><th className="num">Δ</th></tr></thead>
+                    <tbody>
+                      {['annual_avg', 'winter_avg', 'summer_avg', 'neg_hours', 'hours_above_100', 'solar_capture', 'daily_spread'].map((k) => (
+                        <tr key={k}><td>{kl[k].label}</td><td className="num">{f1(base[k].mean)}</td><td className="num"><b>{f1(custom.kpis[k].mean)}</b></td>
+                          <td className="num">{sign(custom.kpis[k].mean - base[k].mean)}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              })()}
+              <p className="foot">Hourly prices for {custom.target_year ?? 2035}, weather year(s) {(custom.weather_years ?? []).join(', ') || 'n/a'}
+                {custom.baseline_kpis ? `; ${cur.short} recomputed with the same settings, so Δ shows only your changes.` : ' — API is an older version: the base column is the published result and may use other weather years.'}
+                {api.trained && <> Model trained on data up to {String(api.trained).slice(0, 10)}.</>}</p>
               {custom.mix && <div className="mix-custom"><MixPie mix={custom.mix} size={200} /><MixLegend /></div>}
               <LineChart xLabels={Array.from({ length: 24 }, (_, h) => `${h}h`)} xTickEvery={3}
                 series={[{ name: `${cur.short} ${season}`, color: cur.color, values: prof(cur) },

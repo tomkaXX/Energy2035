@@ -58,7 +58,10 @@ class RunRequest(BaseModel):
 def health():
     try:
         _, meta, _ = _state()
-        return {"ok": True, "data": meta, "weather_years": WEATHER_YEARS or "all", "quantiles": QUANTILES}
+        _, _, model = _state()
+        return {"ok": True, "data": meta, "weather_years": WEATHER_YEARS or "all", "quantiles": QUANTILES,
+                "model_trained_on": model.meta.get("trained_on"), "target_year": load_settings()["scenario_run"]["target_year"],
+                "backtest_mae": round(model.meta["backtest"]["lightgbm"]["mae"], 1)}
     except FileNotFoundError as e:
         return {"ok": False, "error": str(e)}
 
@@ -92,7 +95,19 @@ def run(req: RunRequest):
         raise HTTPException(400, f"unknown scenario {req.base}")
     hist, _, model = _state()
     params = deep_merge(cfg[req.base]["params"], req.overrides)
-    res = run_scenario(model, hist, params, weather_years=req.weather_years or WEATHER_YEARS)
+    wy = req.weather_years or WEATHER_YEARS
+    res = run_scenario(model, hist, params, weather_years=wy)
     out = summarize(res)
-    out.update({"id": "custom", "name": f"Custom (from {cfg[req.base]['short']})", "params": params})
+    # baseline with the SAME model, data and weather years, so "Custom − base" only shows the slider effect
+    out["baseline_kpis"] = _baseline(req.base, tuple(wy) if wy else None)
+    out.update({"id": "custom", "name": f"Custom (from {cfg[req.base]['short']})", "params": params,
+                "target_year": load_settings()["scenario_run"]["target_year"],
+                "weather_years": [r["weather_year"] for r in res["runs"]]})
     return out
+
+
+@lru_cache(maxsize=16)
+def _baseline(base: str, weather_years: tuple | None) -> dict:
+    hist, _, model = _state()
+    params = load_scenarios()["scenarios"][base]["params"]
+    return summarize(run_scenario(model, hist, params, weather_years=list(weather_years) if weather_years else None))["kpis"]
