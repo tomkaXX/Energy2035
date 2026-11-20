@@ -2,7 +2,7 @@
 
 A light React app (Vite) that shows how nuclear, hydro, solar PV, decentralised flexibility and a changing climate shape the **hourly** Swiss spot price curve and the resulting **Price Forward Curve (PFC)**.
 
-Live: https://tomkaXX.github.io/Energy2035
+Live: https://pfc2035.ch
 
 ## What's inside
 
@@ -17,7 +17,7 @@ Live: https://tomkaXX.github.io/Energy2035
 
 A second tab shows the machine-learning PFC for 2035 under the three E-CUBE scenarios (BAU, successful transition, delayed transition): the results table, monthly and daily shapes, month × hour heatmap, hourly week view with P10/P90, duration curve, driver importance, sensitivity tornado, back-test vs. the Chronos foundation model, and a what-if panel.
 
-The data comes from the Python project in `Documents\Energy2035` (`python -m pfc2035 all`), which writes JSON into `public/pfc2035/`. The what-if sliders call its FastAPI backend (`uvicorn api.main:app --port 8000`); set `VITE_PFC_API` to use another URL. Open http://localhost:5173/Energy2035/#scenarios.
+The data comes from the Python project in `Documents\Energy2035` (`python -m pfc2035 all`), which writes JSON into `public/pfc2035/`. The what-if sliders call its FastAPI backend (`uvicorn api.main:app --port 8000`); set `VITE_PFC_API` to use another URL. Open http://localhost:5173/#scenarios.
 
 ## Structure
 
@@ -48,4 +48,4 @@ One-time setup: **GitHub → Settings → Pages → Build and deployment → Sou
 
 **Manual alternative** (as in [gitname/react-gh-pages](https://github.com/gitname/react-gh-pages), with Vite instead of create-react-app): `npm run deploy` pushes `dist/` to the `gh-pages` branch; then set Pages source to *Deploy from a branch* → `gh-pages` / `(root)`.
 
-`vite.config.js` sets `base: '/Energy2035/'` so asset paths work on the project site https://tomkaXX.github.io/Energy2035/.
+`vite.config.js` uses `base: '/'` because the site is served from the custom domain https://pfc2035.ch (GitHub → Settings → Pages → Custom domain). Without a custom domain, build with `VITE_BASE=/Energy2035/` for https://tomkaXX.github.io/Energy2035/.

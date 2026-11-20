@@ -17,8 +17,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8
-      - key: ALLOWED_ORIGINS
-        value: https://tomkaxx.github.io
+      - key: ALLOWED_ORIGINS   # website origins allowed to call the API
+        value: https://pfc2035.ch,https://www.pfc2035.ch,https://tomkaxx.github.io
       - key: PFC_API_WEATHER_YEARS   # one weather year keeps what-if runs fast on the 0.1-CPU free plan
         value: "2024"
       - key: PFC_API_QUANTILES       # skip P10/P90 models to save memory
