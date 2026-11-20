@@ -26,7 +26,8 @@ const INT_KPIS = new Set(['neg_hours', 'hours_above_100']);
 const SLIDERS = [
   ['ch.pv_twh', 'Swiss PV', 5, 50, 0.5, 'TWh'],
   ['ch.nuclear_gw', 'Swiss nuclear', 0, 3, 0.01, 'GW'],
-  ['ch.battery_gw', 'Swiss batteries', 0, 10, 0.1, 'GW'],
+  ['ch.battery_gw', 'Battery storage (BESS)', 0, 10, 0.1, 'GW'],
+  ['ch.pumped_storage_new_gw', 'New pumped-storage hydro', 0, 4, 0.1, 'GW'],
   ['ch.add_ev_twh', 'Extra EV demand', 0, 10, 0.1, 'TWh'],
   ['ch.add_heatpump_twh', 'Extra heat-pump demand', 0, 10, 0.1, 'TWh'],
   ['neighbours.de_solar_factor', 'German PV vs today', 0.8, 3.5, 0.05, '×'],
@@ -69,7 +70,9 @@ const MIX_CATS = [
   { key: 'nuclear_twh', label: 'Nuclear', color: 'var(--series-2)' },
   { key: 'wind_twh', label: 'Wind', color: 'var(--series-3)' },
   { key: 'pv_twh', label: 'Solar PV', color: 'var(--series-4)' },
-  { key: 'residual_twh', label: 'Storage hydro, imports & other', color: 'var(--series-5)' },
+  { key: 'residual_twh', label: 'Dam & pumped-storage hydro, imports & other', color: 'var(--series-5)' },
+  { key: 'pumped_new_discharge_twh', label: 'New pumped storage (discharge)', color: 'var(--series-6)' },
+  { key: 'bess_discharge_twh', label: 'Battery storage BESS (discharge)', color: 'var(--series-7)' },
 ];
 
 function MixPie({ mix, size = 230 }) {
@@ -112,10 +115,11 @@ function MixPie({ mix, size = 230 }) {
   );
 }
 
-function MixLegend() {
+function MixLegend({ mixes = [] }) {
+  const has = (k) => !mixes.length || mixes.some((m) => (m?.[k] ?? 0) > 0.005);
   return (
     <div className="mix-legend">
-      {MIX_CATS.map((c) => <span key={c.key} className="lg"><i style={{ background: c.color, borderRadius: 2 }} />{c.label}</span>)}
+      {MIX_CATS.filter((c) => !c.key.includes('_discharge_') || has(c.key)).map((c) => <span key={c.key} className="lg"><i style={{ background: c.color, borderRadius: 2 }} />{c.label}</span>)}
     </div>
   );
 }
@@ -181,7 +185,9 @@ export default function Scenarios2035({ view = 'scenarios' }) {
       supply: [
         { name: 'Swiss load', color: 'var(--text-secondary)', values: idx.map((i) => H.load_gw[i]) },
         { name: 'Swiss PV', color: 'var(--series-4)', values: idx.map((i) => H.pv_gw[i]) },
-        { name: 'Residual load after new flexibility', color: 'var(--series-3)', values: idx.map((i) => H.residual_gw[i]) },
+        { name: 'Residual load after new storage', color: 'var(--series-3)', values: idx.map((i) => H.residual_gw[i]) },
+        ...(H.bess_gw ? [{ name: 'BESS: + charging / − discharging', color: 'var(--series-7)', values: idx.map((i) => H.bess_gw[i]) }] : []),
+        ...(H.pumped_new_gw && H.pumped_new_gw.some((v) => v) ? [{ name: 'New pumped storage: + pumping / − turbining', color: 'var(--series-6)', values: idx.map((i) => H.pumped_new_gw[i]) }] : []),
       ],
     };
   }, [cur, startMs, month, week]);
@@ -270,14 +276,14 @@ export default function Scenarios2035({ view = 'scenarios' }) {
             <span className="scen-sub">{f0(s.kpis.neg_hours.mean)} negative h · winter {f0(s.kpis.winter_avg.mean)} / summer {f0(s.kpis.summer_avg.mean)}</span>
             <span className="scen-narr">{s.narrative}</span>
             <span className="scen-params">
-              PV {s.params.ch.pv_twh} TWh · nuclear {s.params.ch.nuclear_gw} GW · batteries {s.params.ch.battery_gw} GW · gas {s.params.market.gas_eur_mwh} €/MWh · CO₂ {s.params.market.co2_eur_t} €/t · border cap. ×{s.params.market.ntc_factor}
+              PV {s.params.ch.pv_twh} TWh · nuclear {s.params.ch.nuclear_gw} GW · BESS {s.params.ch.battery_gw} GW / {+(s.params.ch.battery_gw * s.params.ch.battery_hours).toFixed(1)} GWh · new pumped storage +{s.params.ch.pumped_storage_new_gw ?? 0} GW · gas {s.params.market.gas_eur_mwh} €/MWh · CO₂ {s.params.market.co2_eur_t} €/t · border cap. ×{s.params.market.ntc_factor}
             </span>
             {s.mix && <span className="scen-mix"><span className="scen-mix-h">Energy mix 2035</span><MixPie mix={s.mix} size={210} /></span>}
           </button>
         ))}
       </section>
-      <MixLegend />
-      <p className="foot mix-note">Energy mix: share of 2035 Swiss demand covered by each source in the scenario. "Storage hydro, imports &amp; other" is what dam/pumped-storage hydro, imports and small thermal plants must cover.</p>
+      <MixLegend mixes={sc.map((x) => x.mix)} />
+      <p className="foot mix-note">Energy mix: share of 2035 Swiss demand covered by each source in the scenario. "Dam &amp; pumped-storage hydro, imports &amp; other" is what existing storage hydro, imports and small thermal plants must cover; battery storage (BESS) and new pumped storage are shown separately as the energy they discharge.</p>
 
       <section className="panel">
         <div className="panel-h">
@@ -372,7 +378,7 @@ export default function Scenarios2035({ view = 'scenarios' }) {
             <LineChart xLabels={weekData.labels} xTickEvery={24} series={weekData.series} />
             <LineChart xLabels={weekData.labels} xTickEvery={24} height={130} unit="GW" series={weekData.supply} />
           </>}
-          <p className="foot">Dotted: P10/P90 from quantile models. Lower panel: Swiss load, PV and residual load after new batteries/demand response.</p>
+          <p className="foot">Dotted: P10/P90 from quantile models. Lower panel: Swiss load, PV, residual load after new storage, and the battery (BESS) schedule — positive = charging, negative = discharging.</p>
         </div>
         <div className="panel">
           <div className="panel-h"><h2>Price duration curve</h2><span className="muted">hours sorted from highest to lowest price</span></div>
@@ -493,7 +499,7 @@ export default function Scenarios2035({ view = 'scenarios' }) {
               <p className="foot">Hourly prices for {custom.target_year ?? 2035}, weather year(s) {(custom.weather_years ?? []).join(', ') || 'n/a'}
                 {custom.baseline_kpis ? `; ${cur.short} recomputed with the same settings, so Δ shows only your changes.` : ' — API is an older version: the base column is the published result and may use other weather years.'}
                 {api.trained && <> Model trained on data up to {String(api.trained).slice(0, 10)}.</>}</p>
-              {custom.mix && <div className="mix-custom"><MixPie mix={custom.mix} size={200} /><MixLegend /></div>}
+              {custom.mix && <div className="mix-custom"><MixPie mix={custom.mix} size={200} /><MixLegend mixes={[custom.mix]} /></div>}
               <LineChart xLabels={Array.from({ length: 24 }, (_, h) => `${h}h`)} xTickEvery={3}
                 series={[{ name: `${cur.short} ${season}`, color: cur.color, values: prof(cur) },
                   { name: `Custom ${season}`, color: 'var(--text-primary)', values: season === 'winter' ? custom.profile_winter : custom.profile_summer, dash: '5 4' }]} />
@@ -561,7 +567,7 @@ export default function Scenarios2035({ view = 'scenarios' }) {
         <ol>
           <li><b>Data</b>: hourly CH/DE/FR/IT day-ahead prices, Swiss load, PV, wind, nuclear, run-of-river and neighbours' load/PV/wind/nuclear ({summary.data.source}), plus daily TTF gas and EUA CO₂ prices (2035: scenario level × the {summary.fuel?.profile_year_gas ?? 2024} daily shape).</li>
           <li><b>Model</b>: LightGBM with physical monotone constraints predicts price ÷ gas-plant marginal cost from Swiss and neighbouring residual load, renewables share, daily gas (TTF) and CO₂ (EUA) prices and calendar; quantile models give P10/P90.</li>
-          <li><b>2035 year</b>: each historical weather year is moved to the 2035 calendar and rescaled to the scenario (demand + EV/heat pumps/cooling, PV, nuclear, hydro, neighbours, fuel). New batteries and demand response flatten the residual load before pricing.</li>
+          <li><b>2035 year</b>: each historical weather year is moved to the 2035 calendar and rescaled to the scenario (demand + EV/heat pumps/cooling, PV, nuclear, hydro, neighbours, fuel). Storage is split by technology: battery storage (BESS) and new pumped-storage hydro are dispatched separately (existing dam and pumped-storage hydro is already in the historical prices), then demand response.</li>
           <li><b>Structural effects</b> outside the data — reduced border capacity, PV curtailment floors — are applied as transparent adjustments.</li>
           <li><b>Uncertainty</b>: results are averaged over weather years (range shown) and stress-tested one parameter at a time.</li>
         </ol>

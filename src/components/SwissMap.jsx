@@ -31,6 +31,14 @@ const STATUS_ICON = { good: '●', warning: '▲', serious: '◆', critical: '�
 
 const ALL_LAYERS = { nuclear: true, hydro: true, pv: true, battery: true };
 
+// Battery storage (BESS) status colours, as in the SRF/Swissolar map (June 2026), lightly adjusted for contrast
+export const BESS_STATUS = {
+  'being built': { label: 'Being built', color: '#5cc492' },
+  operational: { label: 'Operational', color: '#1e7b4e' },
+  'in development': { label: 'In development', color: '#2877c4' },
+  proposal: { label: 'Proposal stage', color: '#eda100' },
+};
+
 export default function SwissMap({ year, clim, nukes, showStress, selected, onSelect, layers = ALL_LAYERS }) {
   const [topo, setTopo] = useState(null);
   const [hover, setHover] = useState(null);
@@ -152,13 +160,14 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
             </g>
           );
         })}
-        {layers.battery && pvPoints.batteries.map((b) => {
+        {layers.battery && [...pvPoints.batteries].sort((a, b) => b.power_mw - a.power_mw).map((b) => {
           const h = r(b.power_mw) * 0.89; // square with the same area as a circle of that MW
           return (
             <g key={b.name} transform={`translate(${b.x},${b.y})`} className="bat"
                onMouseEnter={() => setPvHover({ kind: 'battery', ...b })} onMouseLeave={() => setPvHover(null)}>
               <rect x={-h - 3} y={-h - 3} width={2 * h + 6} height={2 * h + 6} className="hit" />
-              <rect x={-h} y={-h} width={2 * h} height={2 * h} rx="2" className={`bat-sq ${b.status !== 'operating' ? 'planned' : ''}`} />
+              <rect x={-h} y={-h} width={2 * h} height={2 * h} rx="2" className="bat-sq"
+                style={{ fill: (BESS_STATUS[b.status] || BESS_STATUS.operational).color }} />
             </g>
           );
         })}
@@ -174,7 +183,7 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
             <li><b>Blue</b> Alpine storage &amp; pumped-storage plants provide seasonal and daily flexibility; their inflows depend on snow and glacier melt.</li>
             <li><b>Green</b> run-of-river plants on the Rhine, Aare and Rhône follow river flow — high in May–August, low in winter and in dry years.</li>
             <li>The coloured <b>ring</b> shows climate stress for the selected year and scenario.</li>
-            <li><b>Yellow</b> circles: installed PV per canton; diamonds: large PV plants; <b>violet</b> squares: battery storage. Circle and square area ∝ MW, on one scale for all technologies.</li>
+            <li><b>Yellow</b> circles: installed PV per canton; diamonds: large PV plants. <b>Squares</b>: battery storage (BESS) &gt; 5 MW, coloured by status (operational, being built, in development, proposal). Circle and square area ∝ MW, on one scale for all technologies.</li>
           </ul>
         )}
       </div>
@@ -193,8 +202,10 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
           <span className="lg"><i className="lg-pv" />PV installed per canton (at the capital, {pv.cantons_date?.split('-').reverse().join('.')}) · same MW scale as plants</span>
           <span className="lg"><i className="lg-pv-large" />Large PV plant</span>
           <span className="lg"><i className="lg-pv-large planned" />planned</span>
-          <span className="lg"><i className="lg-bat" />Battery storage (MW)</span>
-          <span className="lg"><i className="lg-bat planned" />planned / under construction</span>
+          <span className="lg muted">Battery storage (BESS, square area ∝ MW):</span>
+          {Object.entries(BESS_STATUS).map(([k, v]) => (
+            <span key={k} className="lg"><i className="lg-bat" style={{ background: v.color }} />{v.label}</span>
+          ))}
         </div>
       )}
       {showStress && (
@@ -210,10 +221,10 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
         <div className="plant-card">
           {pvHover.kind === 'battery' ? <>
             <div className="pc-head"><strong>{pvHover.name}</strong><span className="muted">{pvHover.canton_code}</span></div>
-            <div className="pc-row"><span>Battery · {pvHover.technology} · {pvHover.status}{pvHover.year ? ` ${pvHover.year}` : ''}</span>
-              <span><b>{fmtN(pvHover.power_mw, 1)} MW</b>{pvHover.energy_mwh ? ` · ${fmtN(pvHover.energy_mwh)} MWh` : ''}</span></div>
-            <div className="pc-row muted"><span>{pvHover.operator}</span></div>
-            <p className="pc-note">{pvHover.note}</p>
+            <div className="pc-row"><span>Battery storage (BESS) · <b style={{ color: (BESS_STATUS[pvHover.status] || {}).color }}>■</b> {(BESS_STATUS[pvHover.status] || {}).label || pvHover.status}</span>
+              <span><b>{fmtN(pvHover.power_mw, 1)} MW</b>{pvHover.energy_mwh ? ` · ${fmtN(pvHover.energy_mwh, 1)} MWh` : ''}</span></div>
+            {pvHover.power_mw > 0 && pvHover.energy_mwh > 0 && <div className="pc-row muted"><span>Duration</span><span>{fmtN(pvHover.energy_mwh / pvHover.power_mw, 1)} h</span></div>}
+            {pvHover.note && <p className="pc-note">{pvHover.note}</p>}
           </> : pvHover.kind === 'canton' ? <>
             <div className="pc-head"><strong>{pvHover.canton_en} ({pvHover.canton_code})</strong><span className="muted">#{pvHover.rank} of 26</span></div>
             <div className="pc-row"><span>Solar PV per inhabitant</span><span><b>{fmtN(pvHover.watts_per_capita)} W</b></span></div>

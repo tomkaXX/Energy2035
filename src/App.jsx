@@ -54,7 +54,7 @@ export default function App() {
   const [selected, setSelected] = useState(null);
 
   const set = (k) => (v) => setP((o) => ({ ...o, [k]: v }));
-  const setYear = (y) => setP((o) => ({ ...defaultParams(y), scenario: o.scenario, baseLevel: o.baseLevel, transitGW: o.transitGW, hydro: o.hydro, nuclearLife: o.nuclearLife }));
+  const setYear = (y) => setP((o) => ({ ...defaultParams(y), scenario: o.scenario, baseLevel: o.baseLevel, transitGW: o.transitGW, hydro: o.hydro, nuclearLife: o.nuclearLife, psGW: o.psGW }));
 
   const res = useMemo(() => computePFC(p), [p]);
   const ref = useMemo(() => computePFC({ ...defaultParams(REF_YEAR), baseLevel: p.baseLevel, scenario: p.scenario }), [p.baseLevel, p.scenario]);
@@ -117,9 +117,11 @@ export default function App() {
             hint="Higher = stronger coupling to DE/FR/IT shape" />
           <h2>Supply &amp; demand</h2>
           <Slider label="PV capacity (CH)" value={p.pvGW} min={5} max={50} step={0.5} unit="GW" onChange={set('pvGW')} />
-          <Slider label="Decentralised flexibility" value={p.flexGW} min={0} max={10} step={0.1} unit="GW" onChange={set('flexGW')}
-            hint="Batteries, demand response, PV injection management" />
-          <Slider label="Flexibility duration" value={p.flexHours} min={1} max={6} unit="h" onChange={set('flexHours')} />
+          <Slider label="Battery storage (BESS)" value={p.flexGW} min={0} max={10} step={0.1} unit="GW" onChange={set('flexGW')}
+            hint="Grid-scale and home batteries (decentralised flexibility)" />
+          <Slider label="BESS duration" value={p.flexHours} min={1} max={6} unit="h" onChange={set('flexHours')} />
+          <Slider label="Pumped-storage hydro" value={p.psGW ?? 3.0} min={0} max={8} step={0.1} unit="GW" onChange={set('psGW')}
+            hint="Turbine capacity: Nant de Drance, Limmern, Hongrin, Grimsel/Oberaar, Mapragg … (~3 GW today)" />
           <Slider label="Annual demand" value={p.demandTWh} min={55} max={90} unit="TWh" onChange={set('demandTWh')} />
           <Slider label="Gösgen / Leibstadt lifetime" value={p.nuclearLife} min={50} max={80} unit="yrs" onChange={set('nuclearLife')}
             hint={`Gösgen until ${1979 + p.nuclearLife}, Leibstadt until ${1984 + p.nuclearLife}`} />
@@ -140,7 +142,7 @@ export default function App() {
               <div className="panel-h">
                 <h2>Generation map · nuclear, hydro &amp; solar</h2>
                 <span className="map-toggles" role="group" aria-label="Map layers">
-                  {[['nuclear', 'Nuclear', 'var(--series-2)'], ['hydro', 'Hydro', 'var(--series-1)'], ['pv', 'PV', 'var(--series-4)'], ['battery', 'Battery', '#6250d6']].map(([k, label, c]) => (
+                  {[['nuclear', 'Nuclear', 'var(--series-2)'], ['hydro', 'Hydro', 'var(--series-1)'], ['pv', 'PV', 'var(--series-4)'], ['battery', 'Battery (BESS)', '#1e7b4e']].map(([k, label, c]) => (
                     <label key={k} className="chk"><input type="checkbox" checked={layers[k]} onChange={toggleLayer(k)} style={{ accentColor: c }} /> {label}</label>
                   ))}
                   <span className="map-toggles-sep" aria-hidden="true" />
@@ -255,7 +257,7 @@ export default function App() {
             <h2>How the model works</h2>
             <ol>
               <li><b>Residual load</b> per hour = demand − nuclear − run-of-river − PV in Switzerland, blended with a stylised EU residual load (DE/FR/IT solar and wind). The blend weight grows with import/transit capacity, because the Swiss price is largely coupled to its neighbours.</li>
-              <li><b>Flexibility</b> — existing pumped storage (~3 GW) plus the decentralised flexibility slider (batteries, demand response, PV injection management) — shifts energy within each day from low- to high-residual-load hours, flattening the shape.</li>
+              <li><b>Storage</b>, split by technology — pumped-storage hydro (~3 GW, 8 h, slider) and battery storage (BESS, slider) — shifts energy within each day from low- to high-residual-load hours, flattening the shape.</li>
               <li><b>Merit order</b>: a convex function maps residual load to relative price, with negative prices in strong oversupply and a scarcity premium when residual load exceeds import capacity.</li>
               <li><b>Climate</b>: hot-river days curtail river-cooled nuclear (Beznau) and raise summer import prices (French fleet); dry spells, lower summer precipitation and glacier retreat cut late-summer run-of-river; wetter winters raise winter runoff; fewer heating degree days lower winter demand.</li>
               <li><b>Calibration</b>: as with a real PFC, the hourly shape is scaled so the annual average equals the base forward level. Times are CET without daylight-saving shifts.</li>

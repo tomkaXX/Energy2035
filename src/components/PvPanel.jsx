@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import Section from './Section.jsx';
 import { LineChart } from './Charts.jsx';
-import { NATIONAL } from '../data/plants.js';
+import { NATIONAL, PLANTS } from '../data/plants.js';
+import { BESS_STATUS } from './SwissMap.jsx';
 
 // Solar PV, battery storage and hydro sections of the fleet panel.
 // Data: public/pfc2035/pv_map.json, written by the Python project (python -m pfc2035 scenarios).
@@ -12,6 +13,7 @@ const dmy = (s) => (s ? s.split('-').reverse().join('.') : '');
 
 export default function PvPanel() {
   const [pv, setPv] = useState(null);
+  const [allBess, setAllBess] = useState(false);
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}pfc2035/pv_map.json`).then((r) => (r.ok ? r.json() : null)).then(setPv).catch(() => setPv(null));
   }, []);
@@ -56,36 +58,58 @@ export default function PvPanel() {
         </Section>
       )}
 
-      {/* ---------------- Battery storage ---------------- */}
-      {bat.length > 0 && (
-        <Section title="Battery storage" color="#6250d6" summary={batLast ? `${n2(batLast.storage_gwh)} GWh · end ${batLast.as_of.slice(0, 4)}` : null}>
-          <table className="tbl pv-tbl">
-            <thead><tr><th>Behind the grid connection point</th><th className="num">Storage</th></tr></thead>
-            <tbody>
-              {bat.map((b) => (
-                <tr key={b.as_of}><td>{b.kind === 'forecast' ? `Forecast end of ${b.as_of.slice(0, 4)}` : `End of ${b.as_of.slice(0, 4)}`}</td>
-                  <td className="num"><b>{n2(b.storage_gwh)} GWh</b></td></tr>
-              ))}
-            </tbody>
-          </table>
-          {pv.battery_facilities?.length > 0 && (
-            <table className="tbl pv-tbl">
-              <thead><tr><th>Large facilities</th><th className="num">Power</th><th className="num">Energy</th></tr></thead>
-              <tbody>
-                {[...pv.battery_facilities].sort((a, b) => b.power_mw - a.power_mw).map((b) => (
-                  <tr key={b.name}><td>{b.name} ({b.canton_code})<span className="cell-sub">{b.status}{b.year ? ` · ${b.year}` : ''}</span></td>
-                    <td className="num">{n0(b.power_mw)} MW</td><td className="num">{b.energy_mwh ? `${n0(b.energy_mwh)} MWh` : '–'}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <p className="foot">Swissolar expects growth to 2.5 GWh behind the meter by end of 2026. Facilities from operator releases (Axpo, Primeo/INTILION, Alpiq, FlexBase); shown as violet squares on the map.</p>
-        </Section>
-      )}
+      {/* ---------------- Battery storage (BESS) ---------------- */}
+      {(bat.length > 0 || pv.battery_facilities?.length > 0) && (() => {
+        const fac = [...(pv.battery_facilities || [])].sort((a, b) => b.power_mw - a.power_mw);
+        const bs = pv.battery_by_status || {};
+        const tot = Object.values(bs).reduce((t, v) => ({ mw: t.mw + v.power_mw, mwh: t.mwh + v.energy_mwh, n: t.n + v.count }), { mw: 0, mwh: 0, n: 0 });
+        const shown = allBess ? fac : fac.slice(0, 8);
+        return (
+          <Section title="Battery storage (BESS)" color={BESS_STATUS.operational.color}
+            summary={batLast ? `${n2(batLast.storage_gwh)} GWh home · ${n1(tot.mw / 1000)} GW grid pipeline` : null}>
+            {bat.length > 0 && (
+              <table className="tbl pv-tbl">
+                <thead><tr><th>Behind the grid connection point</th><th className="num">Storage</th></tr></thead>
+                <tbody>
+                  {bat.map((b) => (
+                    <tr key={b.as_of}><td>{b.kind === 'forecast' ? `Forecast end of ${b.as_of.slice(0, 4)}` : `End of ${b.as_of.slice(0, 4)}`}</td>
+                      <td className="num"><b>{n2(b.storage_gwh)} GWh</b></td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {Object.keys(bs).length > 0 && (
+              <table className="tbl pv-tbl">
+                <thead><tr><th>Grid-scale, by status</th><th className="num">Sites</th><th className="num">Power</th><th className="num">Energy</th></tr></thead>
+                <tbody>
+                  {Object.entries(BESS_STATUS).filter(([k]) => bs[k]).map(([k, v]) => (
+                    <tr key={k}><td><i className="sw" style={{ background: v.color }} />{v.label}</td><td className="num">{bs[k].count}</td>
+                      <td className="num">{n0(bs[k].power_mw)} MW</td><td className="num">{n0(bs[k].energy_mwh)} MWh</td></tr>
+                  ))}
+                  <tr><td><b>Total</b></td><td className="num"><b>{tot.n}</b></td><td className="num"><b>{n0(tot.mw)} MW</b></td><td className="num"><b>{n0(tot.mwh)} MWh</b></td></tr>
+                </tbody>
+              </table>
+            )}
+            {fac.length > 0 && <>
+              <table className="tbl pv-tbl">
+                <thead><tr><th>Sites (largest first)</th><th className="num">Power</th><th className="num">Energy</th></tr></thead>
+                <tbody>
+                  {shown.map((b) => (
+                    <tr key={b.name}><td><i className="sw" style={{ background: (BESS_STATUS[b.status] || {}).color }} />{b.name} ({b.canton_code})</td>
+                      <td className="num">{n1(b.power_mw)} MW</td><td className="num">{b.energy_mwh ? `${n1(b.energy_mwh)} MWh` : '–'}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+              {fac.length > 8 && <button type="button" className="btn ghost small" onClick={() => setAllBess((v) => !v)}>{allBess ? 'Show top 8' : `Show all ${fac.length} sites`}</button>}
+            </>}
+            <p className="foot">Grid-scale BESS &gt; 5 MW and status: SRF / Swissolar / 49Komma8 map (June 2026), Gurtnellen updated to operational (inaugurated 9.9.2026), plus SABAG Rothenburg (3.45 MW, May 2026). Behind-the-meter: Swissolar. In the 2035 scenarios BESS is a separate parameter from pumped-storage hydro (BAU 1.5 GW, Transition 3.0 GW, Delayed 0.5 GW).</p>
+          </Section>
+        );
+      })()}
 
       {/* ---------------- Hydro ---------------- */}
       {h && (
-        <Section title="Hydro storage" color="var(--series-1)" summary={`${n1(h.total_pct)} % full · ${dmy(h.date)}`}>
+        <Section title="Hydro storage & pumped storage" color="var(--series-1)" summary={`${n1(h.total_pct)} % full · ${dmy(h.date)}`}>
           <table className="tbl pv-tbl">
             <thead><tr><th>Reservoir content, Monday {dmy(h.date)}</th><th className="num">Value</th></tr></thead>
             <tbody>
@@ -123,6 +147,16 @@ export default function PvPanel() {
               </div>
             </>;
           })()}
+          <h3 className="acc-sub">Pumped-storage hydro (map)</h3>
+          <table className="tbl pv-tbl">
+            <thead><tr><th>Plant</th><th className="num">Turbine</th><th>Canton</th></tr></thead>
+            <tbody>
+              {PLANTS.filter((x) => x.pumped).sort((a, b) => b.mw - a.mw).map((x) => (
+                <tr key={x.id}><td>{x.name}</td><td className="num">{n0(x.mw)} MW</td><td>{x.canton}</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="foot">Indicative scheme capacities (some include non-pumped turbines). Existing dam and pumped-storage hydro is already in the historical prices; the 2035 scenarios add <i>new</i> pumped storage as its own parameter (0 GW by default), separate from battery storage (BESS).</p>
           <p className="foot">BFE weekly bulletin «Speicherinhalt» (Monday 00:00), data/csv/ch_reservoir_weekly.csv. Days of demand = stored energy ÷ ({NATIONAL.demandTWh} TWh/yr ÷ 365). Installed hydro ≈ {NATIONAL.hydroGW} GW, ≈ {NATIONAL.hydroTWh} TWh/yr (indicative).</p>
         </Section>
       )}

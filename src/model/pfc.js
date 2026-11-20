@@ -33,8 +33,10 @@ export function defaultParams(year = 2030) {
     scenario: 'rcp85',
     baseLevel: 85, // €/MWh annual base
     pvGW: round1(Math.min(45, NATIONAL.pvGW2025 + 1.4 * dy)),
-    flexGW: round1(Math.min(8, 0.4 + 0.35 * dy)),
-    flexHours: 2,
+    flexGW: round1(Math.min(8, 0.4 + 0.35 * dy)), // battery storage (BESS), GW
+    flexHours: 2,                                   // BESS duration, h
+    psGW: 3.0,                                      // pumped-storage hydro (turbine GW, existing fleet)
+    psHours: 8,
     demandTWh: Math.round(62 + 0.8 * dy),
     transitGW: 7.5,
     hydro: 'normal', // 'wet' | 'normal' | 'dry'
@@ -63,6 +65,8 @@ export function nuclearOnline(year, nuclearLife) {
 
 export function computePFC(params) {
   const { year, scenario, baseLevel, pvGW, flexGW, flexHours, demandTWh, transitGW, hydro, nuclearLife } = params;
+  const psGW = params.psGW ?? 3.0;
+  const psHours = params.psHours ?? 8;
   const clim = climateFor(scenario, year);
   const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
   const nDays = isLeap ? 366 : 365;
@@ -143,9 +147,8 @@ export function computePFC(params) {
     hours[i] = { i, m, h, dow, weekend, day: Math.floor(i / 24), demand, pv, ror, nuclear, rlCH, rlEU, riverFrac };
   }
 
-  // ---- flexibility: pumped storage (existing) + decentralised flex -------------
-  const existingPS = { gw: 3.0, hours: 8 };
-  applyFlex(hours, nDays, existingPS.gw, existingPS.hours, 'rlCH', 0.8);
+  // ---- storage, split by technology: pumped-storage hydro, then battery storage (BESS) ----------
+  applyFlex(hours, nDays, psGW, psHours, 'rlCH', 0.78);
   applyFlex(hours, nDays, flexGW, flexHours, 'rlCH', 0.88);
 
   // ---- price mapping ----------------------------------------------------------

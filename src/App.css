@@ -198,13 +198,10 @@ select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; b
 .pv-tbl td b { color: var(--text-primary); font-weight: 600; }
 .bat { cursor: pointer; }
 .bat .hit { fill: transparent; }
-.bat-sq { fill: #6250d6; stroke: var(--surface-1); stroke-width: 1.5; }
-.bat-sq.planned { fill: var(--surface-1); fill-opacity: 0.6; stroke: #6250d6; stroke-width: 2; stroke-dasharray: 3 2; }
-.bat:hover .bat-sq { stroke: var(--text-primary); }
-.lg-bat { background: #6250d6; border-radius: 2px !important; }
-.lg-bat.planned { background: var(--surface-1); border: 2px dashed #6250d6; }
+.bat-sq { stroke: #1d2b24; stroke-opacity: .75; stroke-width: 1.2; fill-opacity: 1; }
+.bat:hover .bat-sq { stroke: var(--text-primary); stroke-opacity: 1; stroke-width: 2; }
+.lg-bat { border-radius: 2px !important; outline: 1px solid rgba(29,43,36,.6); outline-offset: -1px; }
 .lg-pv { background: color-mix(in srgb, var(--series-4) 55%, transparent); border: 1.2px solid var(--series-4); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .bat-sq { fill: #9085e9; } :root:not([data-theme='light']) .bat-sq.planned { stroke: #9085e9; fill: var(--surface-1); } }
 /* reading-the-map info box, bottom-left of the map */
 .map-canvas { position: relative; }
 .map-info { position: absolute; left: 8px; bottom: 8px; max-width: 340px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.08); font-size: 12px; z-index: 4; }
@@ -228,3 +225,5 @@ select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; b
 .cell-sub { display: block; font-size: 11px; color: var(--text-muted); }
 .map-toggles { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .map-toggles-sep { width: 1px; height: 16px; background: var(--border); }
+.sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: baseline; }
+.btn.small { padding: 4px 10px; font-size: 12px; margin-top: 6px; }
