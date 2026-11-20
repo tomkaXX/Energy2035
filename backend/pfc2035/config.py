@@ -47,6 +47,8 @@ def load_scenarios() -> dict:
     for sid, sc in cfg["scenarios"].items():
         sc = dict(sc)
         sc["params"] = deep_merge(defaults, sc.get("params", {}))
+        from .data.bess import apply as _bess  # battery_gw / hours from data/csv/battery_facilities.csv
+        _bess(sc["params"])
         sc["id"] = sid
         out[sid] = sc
     return {"scenarios": out, "sensitivities": cfg.get("sensitivities", []), "defaults": defaults}

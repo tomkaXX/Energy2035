@@ -7,13 +7,16 @@ hourly dataset and the trained model the API needs. Re-run after every `train` a
 """
 from __future__ import annotations
 
+import os
 import shutil
+import stat
 
 from .config import HOURLY_META, HOURLY_PARQUET, MODELS_DIR, ROOT, load_settings, resolve
 
 CODE = ["pfc2035", "api", "config"]
 FILES = ["requirements-api.txt", "data/manual/fuel_prices_monthly.csv",
-         "data/csv/EEX-TTF-Day-Ahead.csv", "data/csv/EUA_data_2016-2026.csv"]  # gas/CO₂ for 2035 profiles
+         "data/csv/EEX-TTF-Day-Ahead.csv", "data/csv/EUA_data_2016-2026.csv",
+         "data/csv/battery_facilities.csv"]  # gas/CO₂ for 2035 profiles
 IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".env", "synthetic.py")
 
 README = """# Energy2035 backend (generated — do not edit here)
@@ -27,6 +30,27 @@ Edit the code there, re-train, and re-run `bundle`; then commit this folder.
 """
 
 
+def _writable(path) -> None:
+    try:
+        os.chmod(path, os.stat(path).st_mode | stat.S_IWRITE)  # clears the Windows read-only flag
+    except OSError:
+        pass
+
+
+def _rmtree(path) -> None:
+    def _retry(func, p, _exc):
+        _writable(p)
+        func(p)
+    shutil.rmtree(path, onerror=_retry)
+
+
+def _copy(src, dst) -> None:
+    """Copy contents only (never the read-only flag), overwriting read-only targets."""
+    if os.path.exists(dst):
+        _writable(dst)
+    shutil.copyfile(src, dst)
+
+
 def bundle(target=None, with_quantiles: bool = False) -> None:
     target = resolve(target or load_settings()["export"].get("backend_bundle_dir", "../Repo/Energy2035/backend"))
     if not (MODELS_DIR / "lgbm_meta.json").exists() or not HOURLY_PARQUET.exists():
@@ -38,27 +62,27 @@ def bundle(target=None, with_quantiles: bool = False) -> None:
     for d in CODE:
         dst = target / d
         if dst.exists():
-            shutil.rmtree(dst)
-        shutil.copytree(ROOT / d, dst, ignore=IGNORE)
+            _rmtree(dst)
+        shutil.copytree(ROOT / d, dst, ignore=IGNORE, copy_function=shutil.copyfile)
     st = load_settings()["data"]
     for f in FILES + [st.get("gas_csv"), st.get("co2_csv")]:
         if not f or not (ROOT / f).exists():
             continue
         (target / f).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ROOT / f, target / f)
+        _copy(ROOT / f, target / f)
 
     # model + data
     b = target / "bundle"
     if b.exists():
-        shutil.rmtree(b)
+        _rmtree(b)
     (b / "models").mkdir(parents=True)
     (b / "data" / "processed").mkdir(parents=True)
-    shutil.copy2(HOURLY_PARQUET, b / "data" / "processed" / HOURLY_PARQUET.name)
-    shutil.copy2(HOURLY_META, b / "data" / "processed" / HOURLY_META.name)
+    _copy(HOURLY_PARQUET, b / "data" / "processed" / HOURLY_PARQUET.name)
+    _copy(HOURLY_META, b / "data" / "processed" / HOURLY_META.name)
     names = ["lgbm_mean.txt", "lgbm_meta.json"] + (["lgbm_q10.txt", "lgbm_q50.txt", "lgbm_q90.txt"] if with_quantiles else [])
     for n in names:
         if (MODELS_DIR / n).exists():
-            shutil.copy2(MODELS_DIR / n, b / "models" / n)
+            _copy(MODELS_DIR / n, b / "models" / n)
     (target / "README.md").write_text(README, encoding="utf-8")
     (target / ".python-version").write_text("3.12\n", encoding="utf-8")
 

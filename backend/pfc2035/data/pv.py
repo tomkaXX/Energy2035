@@ -125,7 +125,11 @@ def map_json() -> dict:
         out["battery_national"] = json.loads(pd.read_csv(f).to_json(orient="records"))
     f = resolve(st.get("battery_facilities_csv"))
     if f and f.exists():
-        out["battery_facilities"] = json.loads(pd.read_csv(f).to_json(orient="records"))
+        b = pd.read_csv(f)
+        out["battery_facilities"] = json.loads(b.to_json(orient="records"))
+        g = b.groupby("status").agg(power_mw=("power_mw", "sum"), energy_mwh=("energy_mwh", "sum"), count=("name", "count"))
+        out["battery_by_status"] = {k: {"power_mw": round(float(v.power_mw), 1), "energy_mwh": round(float(v.energy_mwh), 1),
+                                        "count": int(v["count"])} for k, v in g.iterrows()}
     # hydro: latest reservoir content (BFE weekly bulletin)
     from . import reservoir
     h = reservoir.hydro_status(resolve(st.get("reservoir_csv")))

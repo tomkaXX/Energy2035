@@ -31,9 +31,25 @@ defaults: &defaults
     hydro_ror_factor: 1.0          # run-of-river energy multiplier
     summer_drought_factor: 1.0     # extra multiplier on Jul-Sep run-of-river (<1 = dry summers)
     reservoir_factor: 1.0          # reservoir filling vs the weather year (<1 = less water stored)
-    battery_gw: 1.0
+    # --- storage, split by technology ---
+    # Battery storage (BESS), NEW vs the reference years (grid-scale + behind-the-meter).
+    # battery_gw / battery_hours are DERIVED from data/csv/battery_facilities.csv (SRF/Swissolar list):
+    # share of each status built by 2035 + home batteries. Edit the CSV or the shares, then
+    #   python -m pfc2035 bess        (check the totals, writes outputs/bess_list.csv)
+    #   python -m pfc2035 scenarios   (re-run 2035)
+    # Set bess_from_csv: null to use the hand-set battery_gw / battery_hours below instead.
+    bess_from_csv:
+      share: {operational: 1.0, being built: 1.0, in development: 0.5, proposal: 0.0}
+      home_gw: 0.2
+      home_hours: 2.0
+    battery_gw: 1.5                # fallback only
     battery_hours: 2.0
     battery_efficiency: 0.88
+    # Hydro pumped storage, NEW capacity beyond today's fleet (~3 GW incl. Nant de Drance, Limmern,
+    # Hongrin, Grimsel/Oberaar, Mapragg — already in the historical prices). Daily cycling, 75 % round trip.
+    pumped_storage_new_gw: 0.0
+    pumped_storage_hours: 8.0
+    pumped_storage_efficiency: 0.75
     dsm_gw: 0.3                    # demand response / flexible industry (intraday shifting, 2 h)
     curtailment_floor_eur: -20     # PV injection management: PV curtails below this price (null = off)
   neighbours:
@@ -92,9 +108,14 @@ scenarios:
         nuclear_availability_factor: 1.0
         hydro_ror_factor: 1.05     # towards the 37.9 TWh hydro target
         summer_drought_factor: 1.0
-        battery_gw: 3.0
-        battery_hours: 2.5
+        bess_from_csv:             # whole grid-scale pipeline (2.6 GW) + more home batteries
+          share: {operational: 1.0, being built: 1.0, in development: 1.0, proposal: 1.0}
+          home_gw: 0.4
+          home_hours: 2.5
         battery_efficiency: 0.9
+        pumped_storage_new_gw: 0.0
+        pumped_storage_hours: 8.0
+        pumped_storage_efficiency: 0.75
         dsm_gw: 1.0
         curtailment_floor_eur: -5
       neighbours:
@@ -143,9 +164,14 @@ scenarios:
         hydro_ror_factor: 0.95
         summer_drought_factor: 0.8
         reservoir_factor: 0.85     # hot dry summers -> less water stored for winter
-        battery_gw: 0.5
-        battery_hours: 2.0
+        bess_from_csv:             # only operational + being built (0.3 GW) + few home batteries
+          share: {operational: 1.0, being built: 1.0, in development: 0.0, proposal: 0.0}
+          home_gw: 0.2
+          home_hours: 2.0
         battery_efficiency: 0.88
+        pumped_storage_new_gw: 0.0
+        pumped_storage_hours: 8.0
+        pumped_storage_efficiency: 0.75
         dsm_gw: 0.1
         curtailment_floor_eur: null
       neighbours:
@@ -173,8 +199,9 @@ scenarios:
 sensitivities:
   - {id: pv_up20,      label: "Solar +20 %",               changes: [{key: ch.pv_twh, op: mul, value: 1.2}]}
   - {id: nuc_down10,   label: "Nuclear −10 %",             changes: [{key: ch.nuclear_gw, op: mul, value: 0.9}]}
-  - {id: batt_x2,      label: "Swiss battery capacity ×2", changes: [{key: ch.battery_gw, op: mul, value: 2.0}]}
-  - {id: eu_batt_x2,   label: "Neighbours' batteries ×2",  changes: [{key: neighbours.de_battery_gw, op: mul, value: 2.0},
+  - {id: batt_x2,      label: "Swiss BESS ×2",             changes: [{key: ch.battery_gw, op: mul, value: 2.0}]}
+  - {id: pumped_up1,   label: "Pumped storage +1 GW",      changes: [{key: ch.pumped_storage_new_gw, op: add, value: 1.0}]}
+  - {id: eu_batt_x2,   label: "Neighbours' BESS ×2",  changes: [{key: neighbours.de_battery_gw, op: mul, value: 2.0},
                                                                       {key: neighbours.fr_battery_gw, op: mul, value: 2.0},
                                                                       {key: neighbours.it_battery_gw, op: mul, value: 2.0}]}
   - {id: fr_down15,    label: "Imports from France −15 %", changes: [{key: neighbours.fr_nuclear_factor, op: mul, value: 0.85}]}

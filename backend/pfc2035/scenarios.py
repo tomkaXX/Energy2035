@@ -100,9 +100,15 @@ def apply_scenario(y: pd.DataFrame, p: dict) -> pd.DataFrame:
 
     # --- new flexibility smooths Swiss residual load within each day
     rl = (d["ch_load"] - d["ch_solar"] - d["ch_wind"] - d["ch_nuclear"] - d["ch_ror"]).values
+    # storage split by technology: battery storage (BESS) and NEW hydro pumped storage, then demand response.
+    # Existing pumped storage (~4 GW) is already reflected in the historical prices.
     rl_flex = rl.copy()
-    rl_flex = dispatch_flex(rl_flex, loc, ch["battery_gw"], ch["battery_hours"], ch["battery_efficiency"])
-    rl_flex = dispatch_flex(rl_flex, loc, ch["dsm_gw"], 2.0, 1.0)
+    after_bess = dispatch_flex(rl_flex, loc, ch["battery_gw"], ch["battery_hours"], ch["battery_efficiency"])
+    d["ch_bess_gw"] = after_bess - rl_flex                     # + charging, − discharging
+    after_ps = dispatch_flex(after_bess, loc, ch.get("pumped_storage_new_gw", 0.0), ch.get("pumped_storage_hours", 8.0),
+                             ch.get("pumped_storage_efficiency", 0.75))
+    d["ch_pumped_new_gw"] = after_ps - after_bess
+    rl_flex = dispatch_flex(after_ps, loc, ch["dsm_gw"], 2.0, 1.0)
     d["ch_residual_raw"] = rl
     d["ch_residual_flex"] = rl_flex
     # neighbours' new batteries flatten their residual load too (otherwise 2035 solar dips are overstated)

@@ -33,7 +33,7 @@ def _venv_hint() -> None:
 def main() -> None:
     _venv_hint()
     ap = argparse.ArgumentParser(prog="pfc2035", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["check", "reservoir-pdf", "reservoir", "pv", "fuel", "data", "train", "chronos", "scenarios", "all", "bundle"])
+    ap.add_argument("command", choices=["check", "reservoir-pdf", "reservoir", "pv", "bess", "fuel", "data", "train", "chronos", "scenarios", "all", "bundle"])
     ap.add_argument("--source", choices=["energy-charts", "entsoe", "both", "synthetic"], default=None,
                     help="override data.source in config/settings.yaml")
     ap.add_argument("--start", default=None)
@@ -63,6 +63,11 @@ def main() -> None:
     if a.command == "pv":
         from .data.build import refresh_pv
         refresh_pv()
+        return
+
+    if a.command == "bess":
+        from .data.bess import export
+        export()
         return
 
     if a.command == "fuel":

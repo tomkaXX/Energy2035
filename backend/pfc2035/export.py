@@ -36,6 +36,13 @@ def summarize(result: dict) -> dict:
         "nuclear_twh": float(mean_col("ch_nuclear").sum() / 1000),
         "run_of_river_twh": float(mean_col("ch_ror").sum() / 1000),
         "residual_twh": float(mean_col("ch_residual_flex").sum() / 1000),
+        # storage split: energy discharged per technology (TWh) and installed power/energy
+        "bess_discharge_twh": float(-np.clip(mean_col("ch_bess_gw"), None, 0).sum() / 1000) if "ch_bess_gw" in frames[0] else 0.0,
+        "pumped_new_discharge_twh": float(-np.clip(mean_col("ch_pumped_new_gw"), None, 0).sum() / 1000) if "ch_pumped_new_gw" in frames[0] else 0.0,
+        "bess_gw": float(result["params"]["ch"]["battery_gw"]),
+        "bess_gwh": float(result["params"]["ch"]["battery_gw"] * result["params"]["ch"]["battery_hours"]),
+        "pumped_new_gw": float(result["params"]["ch"].get("pumped_storage_new_gw", 0.0)),
+        "pumped_new_gwh": float(result["params"]["ch"].get("pumped_storage_new_gw", 0.0) * result["params"]["ch"].get("pumped_storage_hours", 8.0)),
         "demand_breakdown_twh": frames[0].attrs.get("demand_twh", {}),
     }
     dur = np.sort(price)[::-1]
@@ -60,6 +67,8 @@ def summarize(result: dict) -> dict:
             "pv_gw": R(mean_col("ch_solar"), 2),
             "load_gw": R(mean_col("ch_load"), 2),
             "residual_gw": R(mean_col("ch_residual_flex"), 2),
+            "bess_gw": R(mean_col("ch_bess_gw"), 2) if "ch_bess_gw" in frames[0] else None,
+            "pumped_new_gw": R(mean_col("ch_pumped_new_gw"), 2) if "ch_pumped_new_gw" in frames[0] else None,
         },
     }
 
