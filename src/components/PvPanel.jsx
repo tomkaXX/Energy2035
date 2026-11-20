@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Section from './Section.jsx';
 import { LineChart } from './Charts.jsx';
 import { NATIONAL, PLANTS } from '../data/plants.js';
-import { BESS_STATUS } from './SwissMap.jsx';
+import { BESS_STATUS, bessSwatch } from './SwissMap.jsx';
 
 // Solar PV, battery storage and hydro sections of the fleet panel.
 // Data: public/pfc2035/pv_map.json, written by the Python project (python -m pfc2035 scenarios).
@@ -58,15 +58,31 @@ export default function PvPanel() {
         </Section>
       )}
 
-      {/* ---------------- Battery storage (BESS) ---------------- */}
+      {/* ---------------- Battery installations ---------------- */}
       {(bat.length > 0 || pv.battery_facilities?.length > 0) && (() => {
         const fac = [...(pv.battery_facilities || [])].sort((a, b) => b.power_mw - a.power_mw);
         const bs = pv.battery_by_status || {};
+        const srf = pv.battery_status_totals || [];
         const tot = Object.values(bs).reduce((t, v) => ({ mw: t.mw + v.power_mw, mwh: t.mwh + v.energy_mwh, n: t.n + v.count }), { mw: 0, mwh: 0, n: 0 });
         const shown = allBess ? fac : fac.slice(0, 8);
         return (
-          <Section title="Battery storage (BESS)" color={BESS_STATUS.operational.color}
-            summary={batLast ? `${n2(batLast.storage_gwh)} GWh home · ${n1(tot.mw / 1000)} GW grid pipeline` : null}>
+          <Section title="Battery installations" color={BESS_STATUS.operational.color}
+            summary={srf.length ? `${n0(srf.filter((x) => x.online_by <= 2026).reduce((a, x) => a + x.energy_mwh, 0))} MWh 2026 · ${n0(srf.reduce((a, x) => a + x.energy_mwh, 0))} MWh 2030` : `${n1(tot.mw / 1000)} GW pipeline`}>
+            {srf.length > 0 && (() => {
+              const mx = Math.max(...srf.map((x) => x.energy_mwh));
+              return (
+                <div className="srf-bars" role="img" aria-label="Battery installations over 5 MW in MWh by status">
+                  <div className="srf-title">Battery installations with capacity over 5 MW · in MWh <span className="muted">(used by the model)</span></div>
+                  {srf.map((x) => (
+                    <div key={x.status} className="srf-row">
+                      <span className="srf-lab"><i className="sw" style={bessSwatch(x.status)} />{x.label}</span>
+                      <span className="srf-track"><span className="srf-bar" style={{ width: `${Math.max(1.5, (100 * x.energy_mwh) / mx)}%`, ...bessSwatch(x.status) }} /></span>
+                      <span className="srf-val">{n0(x.energy_mwh)}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
             {bat.length > 0 && (
               <table className="tbl pv-tbl">
                 <thead><tr><th>Behind the grid connection point</th><th className="num">Storage</th></tr></thead>
@@ -80,10 +96,10 @@ export default function PvPanel() {
             )}
             {Object.keys(bs).length > 0 && (
               <table className="tbl pv-tbl">
-                <thead><tr><th>Grid-scale, by status</th><th className="num">Sites</th><th className="num">Power</th><th className="num">Energy</th></tr></thead>
+                <thead><tr><th>Site list (map), by status</th><th className="num">Sites</th><th className="num">Power</th><th className="num">Energy</th></tr></thead>
                 <tbody>
                   {Object.entries(BESS_STATUS).filter(([k]) => bs[k]).map(([k, v]) => (
-                    <tr key={k}><td><i className="sw" style={{ background: v.color }} />{v.label}</td><td className="num">{bs[k].count}</td>
+                    <tr key={k}><td><i className="sw" style={bessSwatch(k)} />{v.label}</td><td className="num">{bs[k].count}</td>
                       <td className="num">{n0(bs[k].power_mw)} MW</td><td className="num">{n0(bs[k].energy_mwh)} MWh</td></tr>
                   ))}
                   <tr><td><b>Total</b></td><td className="num"><b>{tot.n}</b></td><td className="num"><b>{n0(tot.mw)} MW</b></td><td className="num"><b>{n0(tot.mwh)} MWh</b></td></tr>
@@ -95,14 +111,14 @@ export default function PvPanel() {
                 <thead><tr><th>Sites (largest first)</th><th className="num">Power</th><th className="num">Energy</th></tr></thead>
                 <tbody>
                   {shown.map((b) => (
-                    <tr key={b.name}><td><i className="sw" style={{ background: (BESS_STATUS[b.status] || {}).color }} />{b.name} ({b.canton_code})</td>
+                    <tr key={b.name}><td><i className="sw" style={bessSwatch(b.status)} />{b.name} ({b.canton_code})</td>
                       <td className="num">{n1(b.power_mw)} MW</td><td className="num">{b.energy_mwh ? `${n1(b.energy_mwh)} MWh` : '–'}</td></tr>
                   ))}
                 </tbody>
               </table>
               {fac.length > 8 && <button type="button" className="btn ghost small" onClick={() => setAllBess((v) => !v)}>{allBess ? 'Show top 8' : `Show all ${fac.length} sites`}</button>}
             </>}
-            <p className="foot">Grid-scale BESS &gt; 5 MW and status: SRF / Swissolar / 49Komma8 map (June 2026), Gurtnellen updated to operational (inaugurated 9.9.2026), plus SABAG Rothenburg (3.45 MW, May 2026). Behind-the-meter: Swissolar. In the 2035 scenarios BESS is a separate parameter from pumped-storage hydro (BAU 1.5 GW, Transition 3.0 GW, Delayed 0.5 GW).</p>
+            <p className="foot">Battery installations with capacity over 5 MW: SRF / Swissolar / 49Komma8 (June 2026); solid = operational or being built (until end 2026), outline = in development (until 2030), light red dashed = proposal stage (planned). The model uses the SRF totals (~150 MWh operational, 280 MWh being built, 4,350 MWh in development, data/csv/battery_status_totals.csv); the site list is scaled per status to match them. Map extras: Gurtnellen operational since 9.9.2026, SABAG Rothenburg (3.45 MW). Behind-the-meter: Swissolar. 2035 battery storage (BESS) per scenario: BAU 1.36 GW, Transition 2.74 GW, Delayed 0.37 GW — separate from pumped-storage hydro.</p>
           </Section>
         );
       })()}

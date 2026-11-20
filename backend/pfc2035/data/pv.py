@@ -130,6 +130,10 @@ def map_json() -> dict:
         g = b.groupby("status").agg(power_mw=("power_mw", "sum"), energy_mwh=("energy_mwh", "sum"), count=("name", "count"))
         out["battery_by_status"] = {k: {"power_mw": round(float(v.power_mw), 1), "energy_mwh": round(float(v.energy_mwh), 1),
                                         "count": int(v["count"])} for k, v in g.iterrows()}
+    from .bess import status_totals
+    t = status_totals()
+    if t is not None:
+        out["battery_status_totals"] = json.loads(t.to_json(orient="records"))
     # hydro: latest reservoir content (BFE weekly bulletin)
     from . import reservoir
     h = reservoir.hydro_status(resolve(st.get("reservoir_csv")))

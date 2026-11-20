@@ -33,7 +33,9 @@ defaults: &defaults
     reservoir_factor: 1.0          # reservoir filling vs the weather year (<1 = less water stored)
     # --- storage, split by technology ---
     # Battery storage (BESS), NEW vs the reference years (grid-scale + behind-the-meter).
-    # battery_gw / battery_hours are DERIVED from data/csv/battery_facilities.csv (SRF/Swissolar list):
+    # battery_gw / battery_hours are DERIVED from data/csv/battery_facilities.csv (battery installations
+    # > 5 MW), scaled per status to the SRF totals in data/csv/battery_status_totals.csv
+    # (operational ~150 MWh, being built 280 MWh until end 2026, in development 4,350 MWh until 2030):
     # share of each status built by 2035 + home batteries. Edit the CSV or the shares, then
     #   python -m pfc2035 bess        (check the totals, writes outputs/bess_list.csv)
     #   python -m pfc2035 scenarios   (re-run 2035)

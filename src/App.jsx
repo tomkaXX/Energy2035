@@ -142,7 +142,7 @@ export default function App() {
               <div className="panel-h">
                 <h2>Generation map · nuclear, hydro &amp; solar</h2>
                 <span className="map-toggles" role="group" aria-label="Map layers">
-                  {[['nuclear', 'Nuclear', 'var(--series-2)'], ['hydro', 'Hydro', 'var(--series-1)'], ['pv', 'PV', 'var(--series-4)'], ['battery', 'Battery (BESS)', '#1e7b4e']].map(([k, label, c]) => (
+                  {[['nuclear', 'Nuclear', 'var(--series-2)'], ['hydro', 'Hydro', 'var(--series-1)'], ['pv', 'PV', 'var(--series-4)'], ['battery', 'Battery installations', '#1e7b4e']].map(([k, label, c]) => (
                     <label key={k} className="chk"><input type="checkbox" checked={layers[k]} onChange={toggleLayer(k)} style={{ accentColor: c }} /> {label}</label>
                   ))}
                   <span className="map-toggles-sep" aria-hidden="true" />

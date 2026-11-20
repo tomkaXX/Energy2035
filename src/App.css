@@ -227,3 +227,10 @@ select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; b
 .map-toggles-sep { width: 1px; height: 16px; background: var(--border); }
 .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: baseline; }
 .btn.small { padding: 4px 10px; font-size: 12px; margin-top: 6px; }
+.srf-bars { margin: 4px 0 10px; }
+.srf-title { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+.srf-row { display: grid; grid-template-columns: 1fr 44px; align-items: center; column-gap: 8px; font-size: 12px; margin: 2px 0 6px; }
+.srf-lab { grid-column: 1 / -1; }
+.srf-track { height: 14px; background: var(--surface-2, rgba(0,0,0,.04)); border-radius: 2px; }
+.srf-bar { display: block; height: 100%; border-radius: 2px; }
+.srf-val { text-align: right; font-variant-numeric: tabular-nums; }

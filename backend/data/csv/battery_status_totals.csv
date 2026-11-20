@@ -1,0 +1,4 @@
+status,label,energy_mwh,online_by,source
+operational,Operational,150,2026,"SRF/Swissolar/49Komma8 chart 'Battery installations in Switzerland over 5 MW' (bar read off the chart, unlabelled)"
+being built,Being built (until end 2026),280,2026,"SRF/Swissolar/49Komma8 chart 'Battery installations in Switzerland over 5 MW'"
+in development,In development (until 2030),4350,2030,"SRF/Swissolar/49Komma8 chart 'Battery installations in Switzerland over 5 MW'"
