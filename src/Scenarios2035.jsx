@@ -144,8 +144,8 @@ export default function Scenarios2035({ view = 'scenarios' }) {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${DATA_URL}summary.json`).then((r) => { if (!r.ok) throw new Error(`summary.json: HTTP ${r.status}`); return r.json(); }),
-      ...IDS.map((id) => fetch(`${DATA_URL}scenario_${id}.json`).then((r) => (r.ok ? r.json() : null))),
+      fetch(`${DATA_URL}summary.json?v=${__BUILD_ID__}`).then((r) => { if (!r.ok) throw new Error(`summary.json: HTTP ${r.status}`); return r.json(); }),
+      ...IDS.map((id) => fetch(`${DATA_URL}scenario_${id}.json?v=${__BUILD_ID__}`).then((r) => (r.ok ? r.json() : null))),
     ]).then(([s, ...docs]) => {
       setSummary(s);
       setScen(Object.fromEntries(IDS.map((id, i) => [id, docs[i]]).filter(([, d]) => d)));

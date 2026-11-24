@@ -19,15 +19,26 @@ import time
 
 
 def _venv_hint() -> None:
-    """Warn when the project's .venv exists but another Python is running (missing packages)."""
+    """If the project's .venv exists but another Python is running (e.g. `py -m pfc2035`), re-run the
+    same command with the venv's Python, so the installed packages (lightgbm, ...) are always found."""
+    import os
+    import subprocess
     import sys
     from pathlib import Path
 
-    venv = Path(__file__).resolve().parents[1] / ".venv"
-    if venv.exists() and Path(sys.prefix).resolve() != venv.resolve():
-        print(f"! Running with {sys.executable}, not the project venv.\n"
-              f"  Use:  .\\.venv\\Scripts\\Activate.ps1   then   python -m pfc2035 ...\n"
-              f"  or:   .\\.venv\\Scripts\\python.exe -m pfc2035 ...\n")
+    root = Path(__file__).resolve().parents[1]
+    venv = root / ".venv"
+    if not venv.exists() or Path(sys.prefix).resolve() == venv.resolve() or os.environ.get("PFC2035_NO_REEXEC"):
+        return
+    exe = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    if not exe.exists():
+        print(f"! Running with {sys.executable}, not the project venv (no {exe}).\n"
+              f"  Create it with .\\setup.ps1, or install requirements.txt into this Python.\n")
+        return
+    print(f"-> switching to the project venv: {exe}")
+    env = dict(os.environ, PFC2035_NO_REEXEC="1")
+    r = subprocess.run([str(exe), "-m", "pfc2035", *sys.argv[1:]], cwd=str(root), env=env)
+    raise SystemExit(r.returncode)
 
 
 def main() -> None:

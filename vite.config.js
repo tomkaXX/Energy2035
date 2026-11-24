@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Served from the custom domain root: https://pfc2035.ch/  (GitHub Pages + custom domain).
-// For the old project URL https://tomkaXX.github.io/Energy2035/ build with:  VITE_BASE=/Energy2035/ npm run build
 export default defineConfig({
   plugins: [react()],
   base: process.env.VITE_BASE || '/',
+  // cache-buster for the data JSON (public/pfc2035), so a new deploy never shows stale data
+  define: { __BUILD_ID__: JSON.stringify(String(Date.now())) },
 });

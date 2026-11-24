@@ -60,7 +60,7 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}ch.json`).then((r) => r.json()).then(setTopo).catch(() => setTopo(null));
-    fetch(`${import.meta.env.BASE_URL}pfc2035/pv_map.json`).then((r) => (r.ok ? r.json() : null)).then(setPv).catch(() => setPv(null));
+    fetch(`${import.meta.env.BASE_URL}pfc2035/pv_map.json?v=${__BUILD_ID__}`).then((r) => (r.ok ? r.json() : null)).then(setPv).catch(() => setPv(null));
   }, []);
 
   const geo = useMemo(() => {

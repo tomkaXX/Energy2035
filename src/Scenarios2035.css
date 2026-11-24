@@ -69,7 +69,11 @@ code, .code { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; f
 .mix-note { margin: 4px 0 16px; text-align: center; }
 .whatif-base { margin-bottom: 16px; }
 .line-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
-.site-footer { max-width: 1280px; margin: 24px auto 16px; padding: 14px 20px; border-top: 1px solid var(--border, rgba(0,0,0,.12)); font-size: 13px; color: var(--text-secondary, #555); display: flex; gap: 16px; flex-wrap: wrap; align-items: baseline; }
+/* authors footer: fixed to the bottom of the window on every tab */
+body { padding-bottom: 52px; }
+.site-footer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--surface-1, #fff); border-top: 1px solid var(--border, rgba(0,0,0,.12)); box-shadow: 0 -2px 8px rgba(0,0,0,.05); font-size: 13px; color: var(--text-secondary, #555); }
+.site-footer .sf-inner { max-width: 1280px; margin: 0 auto; padding: 9px 20px; display: flex; gap: 6px 16px; flex-wrap: wrap; align-items: baseline; }
 .site-footer .sf-title { font-weight: 600; color: var(--text-primary, #222); }
-.site-footer .sf-authors { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px 28px; flex-wrap: wrap; }
+.site-footer .sf-authors { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px 28px; flex-wrap: wrap; }
 .site-footer a { color: var(--series-1, #2877c4); text-decoration: underline; text-underline-offset: 2px; }
+@media (max-width: 640px) { body { padding-bottom: 84px; } .site-footer { font-size: 12px; } }

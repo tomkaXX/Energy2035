@@ -16,7 +16,7 @@ export default function PvPanel() {
   const [allBess, setAllBess] = useState(false);
   const [allHydro, setAllHydro] = useState(false);
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}pfc2035/pv_map.json`).then((r) => (r.ok ? r.json() : null)).then(setPv).catch(() => setPv(null));
+    fetch(`${import.meta.env.BASE_URL}pfc2035/pv_map.json?v=${__BUILD_ID__}`).then((r) => (r.ok ? r.json() : null)).then(setPv).catch(() => setPv(null));
   }, []);
   if (!pv) return null;
   const nat = pv.national;
