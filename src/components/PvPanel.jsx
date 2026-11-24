@@ -189,12 +189,12 @@ export default function PvPanel() {
                 </tbody>
               </table>
               {hp.length > 10 && <button type="button" className="btn ghost small" onClick={() => setAllHydro((v) => !v)}>{allHydro ? 'Show top 10' : `Show all ${hp.length} stations`}</button>}
-              <p className="foot">Source: <a href="https://www.bfe.admin.ch/en/large-scale-hydropower" target="_blank" rel="noreferrer">BFE — large-scale hydropower</a>, data/csv/hydro_plants.csv (types and coordinates added; locations approximate). The list covers the large stations (~13.2 GW of ~15.5 GW installed). This existing fleet is already in the historical prices; the 2035 scenarios add only <i>new</i> pumped storage (0 GW by default), separate from battery storage (BESS).</p>
+              <p className="foot">Source: <a href="https://www.bfe.admin.ch/en/large-scale-hydropower" target="_blank" rel="noreferrer">BFE — large-scale hydropower</a>, data/csv/hydro_plants.csv (types and coordinates added; locations approximate). The list covers the large stations (~13.2 GW of 16.5 GW installed in 701 plants, BFE 31.12.2025). More charts in the Data tab. This existing fleet is already in the historical prices; the 2035 scenarios add only <i>new</i> pumped storage (0 GW by default), separate from battery storage (BESS).</p>
             </>;
           })() : (
             <p className="foot">Existing dam and pumped-storage hydro is already in the historical prices; the 2035 scenarios add <i>new</i> pumped storage as its own parameter.</p>
           )}
-          <p className="foot">BFE weekly bulletin «Speicherinhalt» (Monday 00:00), data/csv/ch_reservoir_weekly.csv. Days of demand = stored energy ÷ ({NATIONAL.demandTWh} TWh/yr ÷ 365). Installed hydro ≈ {NATIONAL.hydroGW} GW, ≈ {NATIONAL.hydroTWh} TWh/yr (indicative).</p>
+          <p className="foot">BFE weekly bulletin «Speicherinhalt» (Monday 00:00), data/csv/ch_reservoir_weekly.csv. Days of demand = stored energy ÷ ({NATIONAL.demandTWh} TWh/yr ÷ 365). Installed hydro {NATIONAL.hydroGW} GW, {NATIONAL.hydroTWh} TWh/yr (BFE 31.12.2025).</p>
         </Section>
       )}
     </>

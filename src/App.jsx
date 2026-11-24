@@ -150,7 +150,7 @@ export default function App() {
                 </span>
               </div>
               <SwissMap year={p.year} clim={res.clim} nukes={res.nukes} showStress={showStress} layers={layers} selected={selected} onSelect={setSelected} />
-              <p className="foot">Main plants with indicative capacities (Swiss fleet today: ~{NATIONAL.hydroGW} GW hydro, ~{NATIONAL.hydroTWh} TWh/yr; {NATIONAL.nuclearGW} GW nuclear). Hover or tap a plant for details.</p>
+              <p className="foot">Hydro: BFE large-scale stations. Swiss fleet (BFE, 31.12.2025): 701 hydro plants, {NATIONAL.hydroGW} GW, {NATIONAL.hydroTWh} TWh/yr ({NATIONAL.hydroShare} % of production) — run-of-river {NATIONAL.rorGW} GW, storage {NATIONAL.storageGW} GW, pumped storage {NATIONAL.pumpedGW} GW; nuclear {NATIONAL.nuclearGW} GW. Hover or tap a plant for details; more in the Data tab.</p>
             </div>
 
             <div className="panel fleet">

@@ -22,7 +22,7 @@ data:
   pv_cantons_csv: data/csv/pv_cantons_2026-08-06.csv
   pv_large_csv: data/csv/pv_large_installations.csv
   battery_national_csv: data/csv/battery_national.csv      # Swissolar battery storage (GWh)
-  battery_facilities_csv: data/csv/battery_facilities.csv  # large battery projects (map)
+  battery_facilities_csv: data/csv/battery_facilities.csv  # battery installations > 5 MW (map)
   hydro_plants_csv: data/csv/hydro_plants.csv             # BFE large-scale hydropower stations (map + reference fleet)
   battery_status_totals_csv: data/csv/battery_status_totals.csv  # SRF MWh totals by status (model calibration)
   pv_specific_yield_kwh_per_kwp: 950       # Swiss average yield (assumption, edit if you have a better value)

@@ -79,6 +79,12 @@ def apply_scenario(y: pd.DataFrame, p: dict) -> pd.DataFrame:
     d["ch_nuclear"] = d["ch_nuclear"] * (ch["nuclear_gw"] / nuc_ref_gw) * ch["nuclear_availability_factor"]
     drought = np.where(np.isin(mon, [7, 8, 9]), ch["summer_drought_factor"], 1.0)
     d["ch_ror"] = d["ch_ror"] * ch["hydro_ror_factor"] * drought
+    # hydro extensions of existing plants (BFE Po. 23.3006, 2025): dam heightening etc. move water from
+    # summer to winter -> extra winter output (Oct-Mar), less summer output (Apr-Sep), spread evenly
+    w_twh, s_twh = ch.get("hydro_ext_winter_twh", 0.0), ch.get("hydro_ext_summer_twh", 0.0)
+    if w_twh or s_twh:
+        win = np.isin(mon, [10, 11, 12, 1, 2, 3])
+        d["ch_ror"] = d["ch_ror"] + np.where(win, w_twh * 1000 / max(win.sum(), 1), s_twh * 1000 / max((~win).sum(), 1))
     if "ch_res_fill_twh" in d:  # reservoir state of the weather year, scaled (dry/wet 2035)
         d["ch_res_fill_twh"] = d["ch_res_fill_twh"] * ch.get("reservoir_factor", 1.0)
 

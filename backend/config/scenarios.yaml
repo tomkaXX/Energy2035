@@ -31,6 +31,8 @@ defaults: &defaults
     hydro_ror_factor: 1.0          # run-of-river energy multiplier
     summer_drought_factor: 1.0     # extra multiplier on Jul-Sep run-of-river (<1 = dry summers)
     reservoir_factor: 1.0          # reservoir filling vs the weather year (<1 = less water stored)
+    hydro_ext_winter_twh: 0.0      # extra winter (Oct-Mar) hydro output from extensions (Po. 23.3006: up to 2.1 TWh)
+    hydro_ext_summer_twh: 0.0      # change in summer (Apr-Sep) output (Po. 23.3006: -0.745 TWh)
     # --- storage, split by technology ---
     # Battery storage (BESS), NEW vs the reference years (grid-scale + behind-the-meter).
     # battery_gw / battery_hours are DERIVED from data/csv/battery_facilities.csv (battery installations
@@ -203,6 +205,9 @@ sensitivities:
   - {id: nuc_down10,   label: "Nuclear −10 %",             changes: [{key: ch.nuclear_gw, op: mul, value: 0.9}]}
   - {id: batt_x2,      label: "Swiss BESS ×2",             changes: [{key: ch.battery_gw, op: mul, value: 2.0}]}
   - {id: pumped_up1,   label: "Pumped storage +1 GW",      changes: [{key: ch.pumped_storage_new_gw, op: add, value: 1.0}]}
+  # BFE Po. 23.3006 (2025): renewals/extensions of existing hydro (mostly dam heightening):
+  # +2,096 GWh winter, -745 GWh summer production -> shifts Swiss supply from summer to winter
+  - {id: hydro_ext,    label: "Hydro extensions (+2.1 TWh winter, −0.7 TWh summer)", changes: [{key: ch.hydro_ext_winter_twh, op: set, value: 2.096}, {key: ch.hydro_ext_summer_twh, op: set, value: -0.745}]}
   - {id: eu_batt_x2,   label: "Neighbours' BESS ×2",  changes: [{key: neighbours.de_battery_gw, op: mul, value: 2.0},
                                                                       {key: neighbours.fr_battery_gw, op: mul, value: 2.0},
                                                                       {key: neighbours.it_battery_gw, op: mul, value: 2.0}]}

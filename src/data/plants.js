@@ -81,13 +81,17 @@ export const PLANTS = [
 export const TYPE_META = {
   nuclear: { label: 'Nuclear', color: 'var(--series-2)' },
   storage: { label: 'Storage & pumped-storage hydro', color: 'var(--series-1)' },
-  ror: { label: 'Run-of-river hydro', color: 'var(--series-3)' },
+  ror: { label: 'Run-of-river hydro', color: 'var(--ror-fill)' }, // bright blue + dashed border
 };
 
 // National context (indicative, rounded)
 export const NATIONAL = {
-  hydroGW: 15.5, // installed hydro turbine capacity
-  hydroTWh: 36, // average annual hydro generation
+  hydroGW: 16.5, // BFE (31.12.2025): 701 plants >= 300 kW, 16,475 MW max. output (generator)
+  hydroTWh: 37.2, // BFE: annual production potential 37,162 GWh
+  rorGW: 4.3, rorTWh: 17.8, // run-of-river 4,319 MW / 17,764 GWh
+  storageGW: 8.1, storageTWh: 17.8, // storage 8,124 MW / 17,818 GWh
+  pumpedGW: 3.5, pumpedTWh: 1.6, // pumped storage 3,503 MW / 1,579 GWh
+  hydroShare: 58.5, // % of Swiss production (10-year average)
   nuclearGW: 2.97, // operating nuclear (Beznau 1+2, Gösgen, Leibstadt)
   nuclearTWh: 23,
   demandTWh: 62,

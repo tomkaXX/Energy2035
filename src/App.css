@@ -12,6 +12,7 @@
   --series-2: #eb6834;
   --series-3: #1baf7a;
   --series-4: #eda100;
+  --ror-fill: #3ec1ff; --ror-line: #0b6fb8;
   --div-mid: #f0efec;
   --map-land: #ecebe6;
   --map-border: #ffffff;
@@ -38,6 +39,7 @@
     --series-2: #d95926;
     --series-3: #199e70;
     --series-4: #c98500;
+    --ror-fill: #3ab0ea; --ror-line: #7fd3ff;
     --div-mid: #383835;
     --map-land: #2a2a28;
     --map-border: #1a1a19;
@@ -97,6 +99,8 @@ select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; b
 .plant { cursor: pointer; }
 .plant .hit { fill: transparent; }
 .plant .dot { stroke: var(--surface-1); stroke-width: 2; fill-opacity: 0.88; transition: r 0.2s; }
+.plant .dot.ror { stroke: var(--ror-line); stroke-width: 1.6; stroke-dasharray: 3 2; fill-opacity: 0.95; }
+.lg-ror { border: 1.5px dashed var(--ror-line); box-sizing: border-box; }
 .plant .dot.inactive { stroke-width: 1.5; stroke-dasharray: 3 2; }
 .plant .dot.sel, .plant:hover .dot { stroke: var(--text-primary); }
 .plant .pumped-core { fill: var(--surface-1); pointer-events: none; }

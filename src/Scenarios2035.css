@@ -77,3 +77,34 @@ body { padding-bottom: 52px; }
 .site-footer .sf-authors { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px 28px; flex-wrap: wrap; }
 .site-footer a { color: var(--series-1, #2877c4); text-decoration: underline; text-underline-offset: 2px; }
 @media (max-width: 640px) { body { padding-bottom: 84px; } .site-footer { font-size: 12px; } }
+
+/* Data tab */
+.data-tab .subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 14px; }
+.data-tab .subtabs button { display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border, rgba(0,0,0,.15)); background: var(--surface-1, #fff); color: var(--text-primary, #222); font: inherit; font-size: 13px; cursor: pointer; }
+.data-tab .subtabs button.on { border-color: var(--text-primary, #222); font-weight: 600; }
+.data-tab .subtabs i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.data-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.data-card { min-width: 0; }
+.data-card.wide { grid-column: 1 / -1; }
+.data-card .dc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.data-card h3 { margin: 0; font-size: 15px; }
+.data-card .dc-head .muted { font-size: 12px; }
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 6px 0 8px; }
+.kpi { padding: 8px 10px; border: 1px solid var(--border, rgba(0,0,0,.1)); border-radius: 8px; }
+.kpi-v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi-l { font-size: 12px; color: var(--text-secondary, #555); }
+.hbar svg { width: 100%; height: auto; display: block; }
+.hbar .hb-lab { font-size: 12px; fill: var(--text-primary, #222); }
+.hbar .hb-val { font-size: 11px; fill: var(--text-secondary, #555); font-variant-numeric: tabular-nums; }
+.hbar .hb-hi { fill: var(--text-primary, #000); fill-opacity: .04; }
+.hbar .hb-unit { font-size: 11px; text-align: right; margin-top: -2px; }
+.hbar .grid { stroke: var(--border, rgba(0,0,0,.08)); }
+.hbar .axis { stroke: var(--text-muted, #999); }
+.hbar .tick { font-size: 11px; fill: var(--text-muted, #888); }
+.type-key { list-style: none; padding: 0; margin: 6px 0 0; font-size: 12px; display: grid; gap: 3px; }
+.type-key i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.timeline, .implications, .sources { margin: 0; padding-left: 18px; font-size: 13px; display: grid; gap: 6px; }
+.timeline { list-style: none; padding-left: 0; }
+.timeline b { display: inline-block; min-width: 42px; }
+.sources a { color: var(--series-1); }
+@media (max-width: 900px) { .data-grid { grid-template-columns: 1fr; } }

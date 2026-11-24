@@ -94,7 +94,7 @@ export function computePFC(params) {
   });
 
   const avgDemandGW = (demandTWh * 1000) / 8760;
-  const rorAvgGW = (NATIONAL.hydroTWh * 0.47 * 1000) / 8760 * hydroFactor;
+  const rorAvgGW = ((NATIONAL.rorTWh ?? NATIONAL.hydroTWh * 0.47) * 1000) / 8760 * hydroFactor; // BFE: 17.8 TWh run-of-river
   // EU coupled signal: neighbours' PV share of demand grows quickly
   const euPvShare = Math.min(0.32, 0.11 + 0.012 * (year - 2025));
   const euWindShare = Math.min(0.4, 0.27 + 0.007 * (year - 2025));

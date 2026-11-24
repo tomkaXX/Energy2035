@@ -166,7 +166,7 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
               <circle r={r(p.mw) + 3.5} className={`stress stress-${p.stress}`} />
             )}
             <circle r={r(p.mw)}
-              className={`dot ${p.inactive ? 'inactive' : ''} ${selected === p.id ? 'sel' : ''}`}
+              className={`dot ${p.type === 'ror' ? 'ror' : ''} ${p.inactive ? 'inactive' : ''} ${selected === p.id ? 'sel' : ''}`}
               style={{ fill: p.inactive ? 'none' : TYPE_META[p.type].color, stroke: p.inactive ? 'var(--text-muted)' : undefined }} />
             {p.pumped && !p.inactive && <circle r={Math.max(2, r(p.mw) * 0.35)} className="pumped-core" />}
           </g>
@@ -204,8 +204,9 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
         {showInfo && (
           <ul className="howto">
             <li><b>Orange</b> nuclear units sit on the Aare and Rhine — river temperature matters for the river-cooled Beznau units.</li>
-            <li><b>Blue</b> Alpine storage &amp; pumped-storage plants provide seasonal and daily flexibility; their inflows depend on snow and glacier melt.</li>
-            <li><b>Green</b> run-of-river plants on the Rhine, Aare and Rhône follow river flow — high in May–August, low in winter and in dry years.</li>
+            <li><b>Blue</b> Alpine storage &amp; pumped-storage plants (8.1 GW storage, 3.5 GW pumped) shift production from summer to winter and provide power at short notice; inflows depend on snow and glacier melt.</li>
+            <li><b>Bright blue, dashed</b>: run-of-river plants (4.3 GW, 17.8 TWh/yr) on the Rhine, Aare, Reuss, Limmat and Rhône follow river flow — high in May–August, low in winter and in dry years.</li>
+            <li>Hydro stations: BFE list of large-scale plants (71 shown, ~13.2 GW). Switzerland in total: 701 plants ≥ 300 kW, 16,475 MW, 37.2 TWh/yr ≈ 58.5 % of production; Valais and Graubünden supply almost half.</li>
             <li>The coloured <b>ring</b> shows climate stress for the selected year and scenario.</li>
             <li><b>Yellow</b> circles: installed PV per canton; diamonds: large PV plants. <b>Squares</b>: battery installations with capacity over 5 MW, coloured by status — solid = operational or being built (until end 2026), outline = in development (until 2030), light red dashed = proposal (planned). Circle and square area ∝ MW, on one scale for all technologies.</li>
           </ul>
@@ -215,7 +216,7 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
 
       <div className="map-legend">
         {Object.entries(TYPE_META).map(([k, v]) => (
-          <span key={k} className="lg"><i style={{ background: v.color }} />{v.label}</span>
+          <span key={k} className="lg"><i className={k === 'ror' ? 'lg-ror' : undefined} style={{ background: v.color }} />{v.label}</span>
         ))}
         <span className="lg"><i className="lg-hollow" />Shut down (in {year})</span>
         <span className="lg"><i className="lg-pumped" />Pumped storage</span>

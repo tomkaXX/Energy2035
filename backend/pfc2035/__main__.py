@@ -4,6 +4,8 @@
   reservoir-pdf  extract BFE reservoir PDFs (data/pdf) to data/csv/ch_reservoir_weekly.csv and attach
   reservoir  attach Swiss reservoir filling (BFE CSV, else ENTSO-E) to the dataset, no full re-download
   pv         rescale Swiss solar to official installed capacity (data/csv/pv_national.csv)
+  hydro      hydro stations (data/csv/hydro_plants.csv) + BFE report data -> hydro_docs.json
+  bess       battery list -> scenario BESS GW/GWh, writes outputs/bess_list.csv
   fuel       re-attach daily gas/CO₂ prices (data/csv) to the dataset, no download
   data       download/build the hourly dataset      [--source energy-charts|entsoe|both|synthetic]
   train      train LightGBM (+ back-test, driver importance)
@@ -16,6 +18,8 @@ from __future__ import annotations
 
 import argparse
 import time
+
+from .config import load_settings, resolve
 
 
 def _venv_hint() -> None:
@@ -82,8 +86,12 @@ def main() -> None:
         return
 
     if a.command == "hydro":
+        from .config import WORK
+        from .data import hydro_docs
         from .data.hydro_plants import report
         report()
+        st = load_settings()
+        hydro_docs.export([WORK / "outputs", resolve(st["export"].get("react_public_dir"))])
         return
 
     if a.command == "fuel":

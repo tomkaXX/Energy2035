@@ -224,6 +224,8 @@ def run_all(hist: pd.DataFrame, data_meta: dict, with_sensitivity: bool = True) 
     pvmap = pvmod.map_json()
     if pvmap:
         (out_dir / "pv_map.json").write_text(json.dumps(pvmap, ensure_ascii=False), encoding="utf-8")
+    from .data import hydro_docs
+    hydro_docs.export([out_dir])
     write_results_table(summary, out_dir)
 
     react_dir = resolve(settings["export"].get("react_public_dir"))
