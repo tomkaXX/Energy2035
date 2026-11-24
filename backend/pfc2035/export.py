@@ -120,6 +120,11 @@ def _reservoir_chart(hist: pd.DataFrame, settings: dict) -> dict:
             "reservoir_source": "ENTSO-E A72"}
 
 
+def _hydro_fleet():
+    from .data.hydro_plants import fleet
+    return fleet()
+
+
 def fuel_summary(scenarios: dict, hist: pd.DataFrame) -> dict:
     """Gas & CO₂: monthly history (actual years) and the 2035 monthly path of each scenario."""
     from .data import fuel
@@ -210,6 +215,7 @@ def run_all(hist: pd.DataFrame, data_meta: dict, with_sensitivity: bool = True) 
         "backtest": meta["backtest"],
         "chronos": chronos_bench.load_result(),
         "fuel": fuel_summary(sc_cfg["scenarios"], hist),
+        "hydro_fleet": _hydro_fleet(),
         **_reservoir_chart(hist, settings),
         "sensitivity": sens,
     }

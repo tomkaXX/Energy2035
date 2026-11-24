@@ -101,7 +101,8 @@ def apply_scenario(y: pd.DataFrame, p: dict) -> pd.DataFrame:
     # --- new flexibility smooths Swiss residual load within each day
     rl = (d["ch_load"] - d["ch_solar"] - d["ch_wind"] - d["ch_nuclear"] - d["ch_ror"]).values
     # storage split by technology: battery storage (BESS) and NEW hydro pumped storage, then demand response.
-    # Existing pumped storage (~4 GW) is already reflected in the historical prices.
+    # Existing hydro fleet (data/csv/hydro_plants.csv: ~4.1 GW pumped, ~7.7 GW storage, ~1.4 GW large run-of-river)
+    # is already reflected in the historical prices; only NEW capacity is dispatched here.
     rl_flex = rl.copy()
     after_bess = dispatch_flex(rl_flex, loc, ch["battery_gw"], ch["battery_hours"], ch["battery_efficiency"])
     d["ch_bess_gw"] = after_bess - rl_flex                     # + charging, − discharging

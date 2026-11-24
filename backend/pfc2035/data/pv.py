@@ -134,6 +134,12 @@ def map_json() -> dict:
     t = status_totals()
     if t is not None:
         out["battery_status_totals"] = json.loads(t.to_json(orient="records"))
+    # hydro: large hydropower stations (BFE list)
+    from .hydro_plants import fleet, plants
+    hp = plants()
+    if hp is not None:
+        out["hydro_plants"] = json.loads(hp.to_json(orient="records"))
+        out["hydro_fleet"] = fleet()
     # hydro: latest reservoir content (BFE weekly bulletin)
     from . import reservoir
     h = reservoir.hydro_status(resolve(st.get("reservoir_csv")))

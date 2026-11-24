@@ -78,9 +78,21 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
 
   const r = (mw) => 3 + Math.sqrt(mw) * 0.55;
 
+  // hydro stations: BFE list from data/csv/hydro_plants.csv (via pv_map.json); fallback: built-in list
+  const allPlants = useMemo(() => {
+    if (!pv?.hydro_plants?.length) return PLANTS;
+    const hydro = pv.hydro_plants.map((h) => ({
+      id: `h-${h.name}`, name: h.name, canton: h.canton_code, lat: h.lat, lon: h.lon, mw: h.power_mw,
+      type: h.type === 'ror' ? 'ror' : 'storage', pumped: h.type === 'pumped',
+      river: h.type === 'ror' ? h.river_or_reservoir : undefined,
+      note: `${h.type === 'ror' ? 'River' : 'Reservoir'}: ${h.river_or_reservoir}. Source: BFE large-scale hydropower list.`,
+    }));
+    return [...PLANTS.filter((p) => p.type === 'nuclear'), ...hydro];
+  }, [pv]);
+
   const plants = useMemo(() => {
     if (!geo) return [];
-    return [...PLANTS]
+    return [...allPlants]
       .sort((a, b) => b.mw - a.mw)
       .map((p) => {
         const [x, y] = geo.projection([p.lon, p.lat]);
@@ -88,7 +100,7 @@ export default function SwissMap({ year, clim, nukes, showStress, selected, onSe
         const inactive = p.type === 'nuclear' && !nuke?.running;
         return { ...p, x: x + (p.dx || 0), y, inactive, stress: stressFor(p, clim, year, nukes), offYear: nuke?.effectiveOffline };
       });
-  }, [geo, clim, year, nukes]);
+  }, [geo, clim, year, nukes, allPlants]);
 
   const visiblePlants = plants.filter((p) => (p.type === 'nuclear' ? layers.nuclear : layers.hydro));
   const active = hover || visiblePlants.find((p) => p.id === selected);

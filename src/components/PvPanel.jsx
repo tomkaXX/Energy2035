@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Section from './Section.jsx';
 import { LineChart } from './Charts.jsx';
-import { NATIONAL, PLANTS } from '../data/plants.js';
+import { NATIONAL } from '../data/plants.js';
 import { BESS_STATUS, bessSwatch } from './SwissMap.jsx';
 
 // Solar PV, battery storage and hydro sections of the fleet panel.
@@ -14,6 +14,7 @@ const dmy = (s) => (s ? s.split('-').reverse().join('.') : '');
 export default function PvPanel() {
   const [pv, setPv] = useState(null);
   const [allBess, setAllBess] = useState(false);
+  const [allHydro, setAllHydro] = useState(false);
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}pfc2035/pv_map.json`).then((r) => (r.ok ? r.json() : null)).then(setPv).catch(() => setPv(null));
   }, []);
@@ -163,16 +164,36 @@ export default function PvPanel() {
               </div>
             </>;
           })()}
-          <h3 className="acc-sub">Pumped-storage hydro (map)</h3>
-          <table className="tbl pv-tbl">
-            <thead><tr><th>Plant</th><th className="num">Turbine</th><th>Canton</th></tr></thead>
-            <tbody>
-              {PLANTS.filter((x) => x.pumped).sort((a, b) => b.mw - a.mw).map((x) => (
-                <tr key={x.id}><td>{x.name}</td><td className="num">{n0(x.mw)} MW</td><td>{x.canton}</td></tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="foot">Indicative scheme capacities (some include non-pumped turbines). Existing dam and pumped-storage hydro is already in the historical prices; the 2035 scenarios add <i>new</i> pumped storage as its own parameter (0 GW by default), separate from battery storage (BESS).</p>
+          {pv.hydro_plants?.length > 0 ? (() => {
+            const hp = [...pv.hydro_plants].sort((x, y) => y.power_mw - x.power_mw);
+            const f = pv.hydro_fleet || {};
+            const TL = { storage: 'Storage (reservoir)', pumped: 'Pumped storage', ror: 'Run-of-river' };
+            const shown = allHydro ? hp : hp.slice(0, 10);
+            return <>
+              <h3 className="acc-sub">Hydroelectric power stations (BFE)</h3>
+              <table className="tbl pv-tbl">
+                <thead><tr><th>Type</th><th className="num">Stations</th><th className="num">Capacity</th></tr></thead>
+                <tbody>
+                  {['pumped', 'storage', 'ror'].filter((t) => f[t]).map((t) => (
+                    <tr key={t}><td>{TL[t]}</td><td className="num">{f[t].count}</td><td className="num">{n0(f[t].power_mw)} MW</td></tr>
+                  ))}
+                  {f.total && <tr><td><b>Total</b></td><td className="num"><b>{f.total.count}</b></td><td className="num"><b>{n0(f.total.power_mw)} MW</b></td></tr>}
+                </tbody>
+              </table>
+              <table className="tbl pv-tbl">
+                <thead><tr><th>Station (largest first)</th><th>Type</th><th className="num">MW</th></tr></thead>
+                <tbody>
+                  {shown.map((x) => (
+                    <tr key={x.name}><td>{x.name} ({x.canton_code})</td><td>{TL[x.type]}</td><td className="num">{n1(x.power_mw)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+              {hp.length > 10 && <button type="button" className="btn ghost small" onClick={() => setAllHydro((v) => !v)}>{allHydro ? 'Show top 10' : `Show all ${hp.length} stations`}</button>}
+              <p className="foot">Source: <a href="https://www.bfe.admin.ch/en/large-scale-hydropower" target="_blank" rel="noreferrer">BFE — large-scale hydropower</a>, data/csv/hydro_plants.csv (types and coordinates added; locations approximate). The list covers the large stations (~13.2 GW of ~15.5 GW installed). This existing fleet is already in the historical prices; the 2035 scenarios add only <i>new</i> pumped storage (0 GW by default), separate from battery storage (BESS).</p>
+            </>;
+          })() : (
+            <p className="foot">Existing dam and pumped-storage hydro is already in the historical prices; the 2035 scenarios add <i>new</i> pumped storage as its own parameter.</p>
+          )}
           <p className="foot">BFE weekly bulletin «Speicherinhalt» (Monday 00:00), data/csv/ch_reservoir_weekly.csv. Days of demand = stored energy ÷ ({NATIONAL.demandTWh} TWh/yr ÷ 365). Installed hydro ≈ {NATIONAL.hydroGW} GW, ≈ {NATIONAL.hydroTWh} TWh/yr (indicative).</p>
         </Section>
       )}

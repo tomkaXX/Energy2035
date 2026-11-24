@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import App from './App.jsx';
 import Scenarios2035 from './Scenarios2035.jsx';
+import Footer from './components/Footer.jsx';
 import './Scenarios2035.css';
 
 const TABS = [
@@ -31,6 +32,7 @@ export default function Root() {
       </nav>
       {/* one Scenarios2035 instance for the three ML tabs keeps data, selection and what-if state when switching */}
       {tab === 'explorer' ? <App /> : <Scenarios2035 view={tab} />}
+      <Footer />
     </>
   );
 }
