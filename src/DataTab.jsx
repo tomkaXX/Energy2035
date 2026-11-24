@@ -65,8 +65,9 @@ function HBar({ rows, series, unit = '', decimals = 0, labelW = 190, rowH = 0, w
                     <rect x={a} y={yy} width={Math.max(1, b - a)} height={bh} rx="3" style={{ fill: (nS === 1 && r.color) || s.color, ...(s.style || {}), ...((nS === 1 && r.style) || {}) }}>
                       <title>{`${r.label} · ${s.name}: ${nf(val, decimals)} ${unit}`}</title>
                     </rect>
-                    {(nS === 1 || hi === i) && (
-                      <text x={val >= 0 ? b + 4 : a - 4} y={yy + bh - 2} textAnchor={val >= 0 ? 'start' : 'end'} className="hb-val">{nf(val, decimals)}</text>
+                    {(nS === 1 || hi === i) && (val < 0 && b - a > 46
+                      ? <text x={a + 4} y={yy + bh - 2} textAnchor="start" className="hb-val hb-val-in">{nf(val, decimals)}</text>
+                      : <text x={val >= 0 ? b + 4 : a - 4} y={yy + bh - 2} textAnchor={val >= 0 ? 'start' : 'end'} className="hb-val">{nf(val, decimals)}</text>
                     )}
                   </g>
                 );
@@ -100,7 +101,7 @@ function Card({ title, sub, children, wide }) {
 }
 
 /* ------------------------------- HYDRO ------------------------------- */
-function Hydro({ d, pv, summary }) {
+function Hydro({ d, pv, summary, st }) {
   if (!d) return <p className="muted">Loading hydro data… (public/pfc2035/hydro_docs.json — run <code>python -m pfc2035 hydro</code>)</p>;
   const fact = Object.fromEntries(d.key_facts.map((k) => [k.key, k]));
   const fleet = d.fleet_bfe_2025;
@@ -135,6 +136,26 @@ function Hydro({ d, pv, summary }) {
           series={[{ name: 'GWh/yr', color: HC.storage }]} labelW={130} />
         <p className="foot">Run-of-river and storage each produce ~17.8 TWh/yr; pumped storage is mainly a flexibility source (1.6 TWh/yr net of seasonal pumping not deducted). The PFC explorer now uses 17.8 TWh run-of-river from this table.</p>
       </Card>
+
+      {st && (() => {
+        const hp = st.electricity_production_1970_2025.filter((r) => r.year >= 1995);
+        return (
+          <Card title="Hydro production, 1995–2025" sub="TWh · BFE Gesamtenergiestatistik 2025 Tab. 24" wide>
+            <LineChart height={210} unit="TWh" xTickEvery={5} xLabels={hp.map((r) => String(r.year))}
+              series={[
+                { name: 'Storage plants (incl. pumped)', color: HC.storage, values: hp.map((r) => r.storage_gwh / 1000) },
+                { name: 'Run-of-river', color: HC.ror, values: hp.map((r) => r.run_of_river_gwh / 1000) },
+                { name: 'Pumping consumption', color: 'var(--text-muted)', values: hp.map((r) => r.pumping_gwh / 1000), dash: '4 3' },
+              ]} />
+            <div className="line-legend">
+              <span className="lg"><i style={{ background: HC.storage }} />Storage plants (incl. pumped)</span>
+              <span className="lg"><i style={{ background: HC.ror, border: '1.5px dashed var(--ror-line)' }} />Run-of-river</span>
+              <span className="lg"><svg width="22" height="8" aria-hidden="true"><line x1="1" x2="21" y1="4" y2="4" stroke="var(--text-muted)" strokeWidth="2" strokeDasharray="4 3" /></svg>Pumping consumption</span>
+            </div>
+            <p className="foot">Weather drives hydro: 33.5 TWh in dry 2022, a record 48.3 TWh in wet 2024, 37.5 TWh in 2025. Pumping rose from ~2 TWh to 4–5.6 TWh/yr after Linth-Limmern (2017) and Nant de Drance (2022).</p>
+          </Card>
+        );
+      })()}
 
       <Card title="Largest stations on the map" sub="BFE large-scale list, MW">
         <HBar unit="MW" labelW={210} rows={top.map((p) => ({ label: `${p.name.replace(/^Kraftwerk /, '')} (${p.canton_code})`, values: [p.power_mw], color: HC[p.type] || HC.storage, style: p.type === 'ror' ? rorStyle : undefined }))}
@@ -242,18 +263,76 @@ function Hydro({ d, pv, summary }) {
 }
 
 /* ------------------------------- NUCLEAR ------------------------------- */
-function Nuclear() {
+function Nuclear({ st }) {
   const n = PLANTS.filter((p) => p.type === 'nuclear').sort((a, b) => b.mw - a.mw);
   const on = n.filter((p) => !p.offline || p.offline > 2026);
+  if (!st) return <p className="muted">Loading… (public/pfc2035/energy_stats.json — run <code>python -m pfc2035 hydro</code>)</p>;
+  const f = Object.fromEntries(st.nuclear_key_facts.map((k) => [k.key, k]));
+  const prod = st.electricity_production_1970_2025.filter((r) => r.year >= 1995);
+  const yrs = prod.map((r) => String(r.year));
+  const fe = st.final_energy_by_carrier[st.final_energy_by_carrier.length - 1];
+  const pct = (x) => (100 * x) / fe.total_tj;
+  const bal = st.electricity_balance_1970_2025.filter((r) => r.year >= 2010);
+  const ge = st.gross_energy_domestic_import_nuclear.filter((r) => r.year >= 1995);
   return (
     <div className="data-grid">
-      <Card title="Swiss nuclear fleet" sub="net MW">
+      <Card title="Nuclear power in Switzerland" sub="BFE Gesamtenergiestatistik 2025 · PSI" wide>
         <Kpis items={[
-          { value: `${nf(on.reduce((s, p) => s + p.mw, 0) / 1000, 2)} GW`, label: 'operating' },
-          { value: on.length, label: 'units operating' },
-          { value: `~${NATIONAL.nuclearTWh} TWh`, label: 'production per year' },
+          { value: `${nf(f.share_production_2025?.value, 1)} %`, label: 'of electricity production 2025' },
+          { value: `${nf(f.share_winter_2025?.value)} %`, label: 'of production in the winter half-year' },
+          { value: `${nf(f.nuclear_gwh_2025?.value / 1000, 1)} TWh`, label: 'nuclear production 2025' },
+          { value: `${nf(on.reduce((s2, p) => s2 + p.mw, 0) / 1000, 2)} GW`, label: `${on.length} units operating` },
+          { value: `${nf(f.gross_energy_share_2025?.value, 1)} %`, label: 'of gross energy consumption' },
+          { value: `${nf(f.electricity_share_final_2025?.value, 1)} %`, label: 'electricity share of final energy' },
         ]} />
-        <HBar unit="MW" labelW={110} rows={n.map((p) => ({ label: p.name, values: [p.mw] }))} series={[{ name: 'MW', color: 'var(--series-2)' }]} />
+        <p className="foot">After hydropower, nuclear is the second most important source of electricity and one of the most important in winter. Electricity is less than a third of total energy use: petroleum products ~45 %, gas ~12 %, other renewables ~5 %, wood, district heat, coal and waste ~11 %.</p>
+      </Card>
+
+      <Card title="Electricity production by source, 1995–2025" sub="TWh · Tab. 24" wide>
+        <LineChart height={240} unit="TWh" xTickEvery={5} xLabels={yrs}
+          series={[
+            { name: 'Hydro', color: 'var(--series-1)', values: prod.map((r) => r.hydro_gwh / 1000) },
+            { name: 'Nuclear', color: 'var(--series-2)', values: prod.map((r) => r.nuclear_gwh / 1000) },
+            { name: 'Other renewables (PV, wind, biomass)', color: 'var(--series-3)', values: prod.map((r) => (r.other_renewables_gwh ?? 0) / 1000) },
+            { name: 'Conventional thermal & CHP', color: 'var(--text-muted)', values: prod.map((r) => r.thermal_gwh / 1000), dash: '4 3' },
+          ]} />
+        <div className="line-legend">
+          {[['Hydro', 'var(--series-1)'], ['Nuclear', 'var(--series-2)'], ['Other renewables (PV, wind, biomass)', 'var(--series-3)']].map(([nm, c]) => <span key={nm} className="lg"><i style={{ background: c }} />{nm}</span>)}
+          <span className="lg"><svg width="22" height="8" aria-hidden="true"><line x1="1" x2="21" y1="4" y2="4" stroke="var(--text-muted)" strokeWidth="2" strokeDasharray="4 3" /></svg>Conventional thermal &amp; CHP</span>
+        </div>
+        <p className="foot">Nuclear peaked at 26.4 TWh (2014); 2025: 18.4 TWh, the lowest since 2021. Hydro varies with the weather year (33.5 TWh in dry 2022, 48.3 TWh in wet 2024). Hydro storage production includes pumped energy.</p>
+      </Card>
+
+      <Card title="Nuclear share of production" sub="% · Tab. 24">
+        <LineChart height={200} unit="%" xTickEvery={5} xLabels={yrs}
+          series={[{ name: 'Nuclear share', color: 'var(--series-2)', values: prod.map((r) => r.nuclear_pct) }]} />
+        <p className="foot">From 38–40 % around 2000 to 27.2 % in 2025 (Mühleberg closed 2019, growth of PV).</p>
+      </Card>
+      <Card title="Nuclear fuels in gross energy consumption" sub="% · Tab. 8">
+        <LineChart height={200} unit="%" xTickEvery={5} xLabels={ge.map((r) => String(r.year))}
+          series={[{ name: 'Nuclear fuels', color: 'var(--series-2)', values: ge.map((r) => r.nuclear_fuels_pct) }]} />
+        <p className="foot">Counted as primary energy with 33 % efficiency: 200,500 TJ of nuclear fuel → 18.4 TWh electricity in 2025.</p>
+      </Card>
+
+      <Card title={`Final energy consumption by carrier, ${fe.year}`} sub="% of 777,870 TJ · Tab. 1">
+        <HBar unit="%" decimals={1} labelW={170}
+          rows={[
+            ['Petroleum products', fe.petroleum_tj, 'var(--text-muted)'], ['Electricity', fe.electricity_tj, 'var(--series-1)'], ['Gas', fe.gas_tj, 'var(--text-muted)'],
+            ['Wood', fe.wood_tj, 'var(--text-muted)'], ['Other renewables', fe.other_renewables_tj, 'var(--text-muted)'], ['District heat', fe.district_heat_tj, 'var(--text-muted)'],
+            ['Industrial waste', fe.industrial_waste_tj, 'var(--text-muted)'], ['Coal', fe.coal_tj, 'var(--text-muted)'],
+          ].map(([l, val, c]) => ({ label: l, values: [pct(val)], color: c }))}
+          series={[{ name: '%', color: 'var(--text-muted)' }]} />
+        <p className="foot">Electricity (blue) is 26.8 % of final energy; electrification of heat and transport (heat pumps, EVs) is what drives Swiss demand up in the 2035 scenarios.</p>
+      </Card>
+      <Card title="Net electricity imports (+) / exports (−)" sub="GWh per year · Tab. 25">
+        <HBar unit="GWh" labelW={50}
+          rows={bal.map((r) => ({ label: String(r.year), values: [r.net_import_gwh], color: r.net_import_gwh >= 0 ? 'var(--series-2)' : 'var(--series-1)' }))}
+          series={[{ name: 'GWh', color: 'var(--series-1)' }]} />
+        <p className="foot">Orange = net import, blue = net export. Imports in years with low nuclear or hydro output (2016–17, 2021–22); record export of 14.4 TWh in wet 2024; 2025 balanced.</p>
+      </Card>
+
+      <Card title="Swiss nuclear fleet" sub="net MW">
+        <HBar unit="MW" labelW={110} rows={n.map((p) => ({ label: p.name, values: [p.mw], color: p.offline && p.offline <= 2026 ? 'var(--text-muted)' : 'var(--series-2)' }))} series={[{ name: 'MW', color: 'var(--series-2)' }]} />
       </Card>
       <Card title="Units, cooling and planned shutdown">
         <table className="tbl pv-tbl">
@@ -262,13 +341,31 @@ function Nuclear() {
         </table>
         <p className="foot">River-cooled Beznau must reduce output when the Aare exceeds 25 °C. Planned shutdown of Beznau 2032/2033; Mühleberg off since 2019.</p>
       </Card>
+
+      <Card title="What this means for the 2035 price model" wide>
+        <ul className="implications">
+          <li><b>Winter matters most.</b> Nuclear supplies ~34 % of winter-half-year production; losing Beznau (0.73 GW) by 2033 is why all 2035 scenarios use 2.24 GW nuclear (Gösgen + Leibstadt) and why winter prices rise most.</li>
+          <li><b>Availability risk.</b> Annual nuclear output varied between 18.4 and 25.3 TWh in 2016–2025 (−27 % to 0 % of the best year). The Delayed scenario assumes 80 % availability and the “Nuclear −10 %” sensitivity tests smaller losses.</li>
+          <li><b>Imports close the gap.</b> Low-nuclear or dry years turn Switzerland into a net importer, which couples Swiss prices more closely to German and French prices.</li>
+        </ul>
+      </Card>
+
+      <Card title="Sources" wide>
+        <ul className="sources">
+          {st.sources.map((x) => (
+            <li key={x.id}><a href={x.url} target="_blank" rel="noreferrer">{x.title}</a> <span className="muted">· {x.date}</span><br /><span className="muted">{x.key_finding}</span></li>
+          ))}
+        </ul>
+        <p className="foot">Tables 1, 8, 24, 25 of the latest edition (2025) extracted to data/csv/energy_stats/*.csv (Python project); PDFs in data/pdf/energy_stats. Older editions were used for the final-energy mix of 2020–2023; their electricity shares were revised slightly in later editions.</p>
+      </Card>
     </div>
   );
 }
 
 /* ------------------------------- PV ------------------------------- */
-function Pv({ pv }) {
+function Pv({ pv, st }) {
   if (!pv) return <p className="muted">Loading…</p>;
+  const pvp = (st?.electricity_production_1970_2025 || []).filter((r) => r.year >= 2010);
   const c = [...(pv.cantons || [])].sort((a, b) => b.capacity_mw - a.capacity_mw).slice(0, 12);
   const w = [...(pv.cantons || [])].sort((a, b) => b.watts_per_capita - a.watts_per_capita).slice(0, 12);
   return (
@@ -280,6 +377,13 @@ function Pv({ pv }) {
           ...(pv.national ? [{ value: `${nf(pv.national.share_of_consumption_pct, 1)} %`, label: `of consumption (${pv.national.year})` }] : []),
         ]} />
       </Card>
+      {pvp.length > 0 && (
+        <Card title="Solar and wind production, 2010–2025" sub="GWh · BFE Gesamtenergiestatistik 2025 Tab. 24" wide>
+          <HBar unit="GWh" labelW={50} rows={pvp.map((r) => ({ label: String(r.year), values: [r.pv_gwh, r.wind_gwh] }))}
+            series={[{ name: 'Photovoltaics', color: 'var(--series-4)' }, { name: 'Wind', color: 'var(--series-3)' }]} />
+          <p className="foot">PV grew from 94 GWh (2010) to 7,948 GWh (2025) — 11.8 % of Swiss production; wind stays at ~0.16 TWh.</p>
+        </Card>
+      )}
       <Card title="Largest cantons by capacity" sub="MW">
         <HBar unit="MW" labelW={60} rows={c.map((x) => ({ label: x.canton_code, values: [x.capacity_mw] }))} series={[{ name: 'MW', color: 'var(--series-4)' }]} />
       </Card>
@@ -321,7 +425,9 @@ export default function DataTab() {
   const [hydro, setHydro] = useState(null);
   const [pv, setPv] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [stats, setStats] = useState(null);
   useEffect(() => {
+    fetch(`${DATA_URL}energy_stats.json?v=${v}`).then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => setStats(null));
     fetch(`${DATA_URL}hydro_docs.json?v=${v}`).then((r) => (r.ok ? r.json() : null)).then(setHydro).catch(() => setHydro(null));
     fetch(`${DATA_URL}pv_map.json?v=${v}`).then((r) => (r.ok ? r.json() : null)).then(setPv).catch(() => setPv(null));
     fetch(`${DATA_URL}summary.json?v=${v}`).then((r) => (r.ok ? r.json() : null)).then(setSummary).catch(() => setSummary(null));
@@ -341,9 +447,9 @@ export default function DataTab() {
           </button>
         ))}
       </nav>
-      {sub === 'hydro' && <Hydro d={hydro} pv={pv} summary={summary} />}
-      {sub === 'nuclear' && <Nuclear />}
-      {sub === 'pv' && <Pv pv={pv} />}
+      {sub === 'hydro' && <Hydro d={hydro} pv={pv} summary={summary} st={stats} />}
+      {sub === 'nuclear' && <Nuclear st={stats} />}
+      {sub === 'pv' && <Pv pv={pv} st={stats} />}
       {sub === 'battery' && <Battery pv={pv} />}
     </div>
   );

@@ -108,3 +108,5 @@ body { padding-bottom: 52px; }
 .timeline b { display: inline-block; min-width: 42px; }
 .sources a { color: var(--series-1); }
 @media (max-width: 900px) { .data-grid { grid-template-columns: 1fr; } }
+.hbar .hb-val-in { fill: #fff; }
+.data-card.wide > .chart { max-width: 860px; }
