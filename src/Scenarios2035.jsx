@@ -524,7 +524,7 @@ export default function Scenarios2035({ view = 'scenarios' }) {
         </table>
         {!ch && <p className="foot">Chronos not run yet: <code>pip install -r requirements-chronos.txt</code>, then <code>python -m pfc2035 chronos</code> and <code>python -m pfc2035 scenarios</code>.</p>}
         {ch?.sample && (
-          <LineChart xLabels={ch.sample.t.map((t) => t.slice(5, 16))} xTickEvery={24}
+          <LineChart xLabels={ch.sample.t.map((t) => new Date(t.replace(' ', 'T')).toLocaleString('de-CH', { timeZone: 'Europe/Zurich', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ''))} xTickEvery={48}
             series={[{ name: 'Actual', color: 'var(--text-primary)', values: ch.sample.actual },
               { name: 'Chronos mean', color: 'var(--series-2)', values: ch.sample.chronos },
               { name: 'Chronos P10', color: 'var(--text-muted)', values: ch.sample.p10, dash: '3 3' },

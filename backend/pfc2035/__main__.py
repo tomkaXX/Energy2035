@@ -5,6 +5,7 @@
   reservoir  attach Swiss reservoir filling (BFE CSV, else ENTSO-E) to the dataset, no full re-download
   pv         rescale Swiss solar to official installed capacity (data/csv/pv_national.csv)
   hydro      hydro stations (data/csv/hydro_plants.csv) + BFE report data -> hydro_docs.json
+  today      today's hourly price: model vs. actual day-ahead (CHF/kWh) -> today.json
   validate   compare model inputs with BFE monthly electricity statistics (data/csv/bfe_elstat)
   bess       battery list -> scenario BESS GW/GWh, writes outputs/bess_list.csv
   fuel       re-attach daily gas/CO₂ prices (data/csv) to the dataset, no download
@@ -49,13 +50,15 @@ def _venv_hint() -> None:
 def main() -> None:
     _venv_hint()
     ap = argparse.ArgumentParser(prog="pfc2035", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["check", "reservoir-pdf", "reservoir", "pv", "bess", "hydro", "validate", "fuel", "data", "train", "chronos", "scenarios", "all", "bundle"])
+    ap.add_argument("command", choices=["check", "reservoir-pdf", "reservoir", "pv", "bess", "hydro", "validate", "today", "fuel", "data", "train", "chronos", "scenarios", "all", "bundle"])
     ap.add_argument("--source", choices=["energy-charts", "entsoe", "both", "synthetic"], default=None,
                     help="override data.source in config/settings.yaml")
     ap.add_argument("--start", default=None)
     ap.add_argument("--end", default=None)
     ap.add_argument("--no-sensitivity", action="store_true", help="skip the sensitivity runs (faster)")
     ap.add_argument("--no-chronos", action="store_true")
+    ap.add_argument("--date", default=None, help="today: day to price (YYYY-MM-DD), default = today")
+    ap.add_argument("--fx", type=float, default=None, help="today: EUR->CHF rate (default export.today_fx_eur_chf)")
     a = ap.parse_args()
     t0 = time.time()
 
@@ -93,6 +96,11 @@ def main() -> None:
         report()
         st = load_settings()
         hydro_docs.export([WORK / "outputs", resolve(st["export"].get("react_public_dir"))])
+        return
+
+    if a.command == "today":
+        from .today import run as today_run
+        today_run(a.date, a.fx)
         return
 
     if a.command == "validate":

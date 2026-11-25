@@ -238,3 +238,7 @@ select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; b
 .srf-track { height: 14px; background: var(--surface-2, rgba(0,0,0,.04)); border-radius: 2px; }
 .srf-bar { display: block; height: 100%; border-radius: 2px; }
 .srf-val { text-align: right; font-variant-numeric: tabular-nums; }
+.fleet-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.today-lede { font-size: 12px; margin: 4px 0 6px; color: var(--text-secondary); }
+.today-tbl td.ok { color: #1e7b4e; } .today-tbl td.warn { color: #b07800; } .today-tbl td.bad { color: #c0392b; font-weight: 600; }
+.today-tbl th .muted { font-weight: 400; font-size: 10px; }

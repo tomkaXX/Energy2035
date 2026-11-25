@@ -61,3 +61,5 @@ export:
   react_public_dir: ../Repo/Energy2035/public/pfc2035
   # where `python -m pfc2035 bundle` writes the deployable API (Render deploys it from the repo)
   backend_bundle_dir: ../Repo/Energy2035/backend
+  # EUR -> CHF for the "today" price block (euenergy.live rate on 25.11.2026: 235.25 CHF / 255.07 EUR)
+  today_fx_eur_chf: 0.9223

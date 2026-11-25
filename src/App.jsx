@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import SwissMap from './components/SwissMap.jsx';
 import PvPanel from './components/PvPanel.jsx';
+import TodayPrice from './components/TodayPrice.jsx';
 import Section from './components/Section.jsx';
 import { LineChart, Heatmap, MiniBars } from './components/Charts.jsx';
 import { computePFC, defaultParams, toCSV, MONTHS } from './model/pfc.js';
@@ -153,6 +154,7 @@ export default function App() {
               <p className="foot">Hydro: BFE large-scale stations. Swiss fleet (BFE, 31.12.2025): 701 hydro plants, {NATIONAL.hydroGW} GW, {NATIONAL.hydroTWh} TWh/yr ({NATIONAL.hydroShare} % of production) — run-of-river {NATIONAL.rorGW} GW, storage {NATIONAL.storageGW} GW, pumped storage {NATIONAL.pumpedGW} GW; nuclear {NATIONAL.nuclearGW} GW. Hover or tap a plant for details; more in the Data tab.</p>
             </div>
 
+            <div className="fleet-col">
             <div className="panel fleet">
               <h2 className="fleet-title">Swiss generation &amp; storage</h2>
               <Section title={`Nuclear fleet in ${p.year}`} color="var(--series-2)" defaultOpen
@@ -177,6 +179,8 @@ export default function App() {
               </Section>
               <PvPanel />
 
+            </div>
+            <TodayPrice />
             </div>
           </section>
 

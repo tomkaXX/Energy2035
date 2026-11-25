@@ -1,0 +1,258 @@
+{
+ "date": "2026-11-25",
+ "fx_eur_chf": 0.9223,
+ "model_inputs": "analog day 2026-11-11 from the hourly dataset (no forecasts available)",
+ "note": "Actual prices from actual_prices/ch_dayahead_2026-11-25.csv.",
+ "actual_source": "ENTSO-E day-ahead CH (as on euenergy.live), excluding grid fees, levies and VAT",
+ "gas_eur_mwh": 80.74,
+ "co2_eur_t": 83.41,
+ "summary": {
+  "mae_eur_mwh": 23.5,
+  "mape_pct": 8.7,
+  "avg_model_chf_kwh": 0.2548,
+  "avg_actual_chf_kwh": 0.2353
+ },
+ "hours": [
+  {
+   "hour": "00:00",
+   "model_eur_mwh": 208.6,
+   "actual_eur_mwh": 217.56,
+   "model_chf_kwh": 0.1924,
+   "actual_chf_kwh": 0.2007,
+   "p10_chf_kwh": 0.1882,
+   "p90_chf_kwh": 0.2015,
+   "error_pct": -4.1
+  },
+  {
+   "hour": "01:00",
+   "model_eur_mwh": 209.44,
+   "actual_eur_mwh": 213.0,
+   "model_chf_kwh": 0.1932,
+   "actual_chf_kwh": 0.1964,
+   "p10_chf_kwh": 0.1908,
+   "p90_chf_kwh": 0.2036,
+   "error_pct": -1.7
+  },
+  {
+   "hour": "02:00",
+   "model_eur_mwh": 202.93,
+   "actual_eur_mwh": 208.98,
+   "model_chf_kwh": 0.1872,
+   "actual_chf_kwh": 0.1927,
+   "p10_chf_kwh": 0.1863,
+   "p90_chf_kwh": 0.1978,
+   "error_pct": -2.9
+  },
+  {
+   "hour": "03:00",
+   "model_eur_mwh": 204.87,
+   "actual_eur_mwh": 207.99,
+   "model_chf_kwh": 0.189,
+   "actual_chf_kwh": 0.1918,
+   "p10_chf_kwh": 0.1888,
+   "p90_chf_kwh": 0.1982,
+   "error_pct": -1.5
+  },
+  {
+   "hour": "04:00",
+   "model_eur_mwh": 205.63,
+   "actual_eur_mwh": 210.0,
+   "model_chf_kwh": 0.1896,
+   "actual_chf_kwh": 0.1937,
+   "p10_chf_kwh": 0.1867,
+   "p90_chf_kwh": 0.1988,
+   "error_pct": -2.1
+  },
+  {
+   "hour": "05:00",
+   "model_eur_mwh": 218.41,
+   "actual_eur_mwh": 220.39,
+   "model_chf_kwh": 0.2014,
+   "actual_chf_kwh": 0.2033,
+   "p10_chf_kwh": 0.1964,
+   "p90_chf_kwh": 0.2164,
+   "error_pct": -0.9
+  },
+  {
+   "hour": "06:00",
+   "model_eur_mwh": 254.54,
+   "actual_eur_mwh": 250.86,
+   "model_chf_kwh": 0.2348,
+   "actual_chf_kwh": 0.2314,
+   "p10_chf_kwh": 0.217,
+   "p90_chf_kwh": 0.2396,
+   "error_pct": 1.5
+  },
+  {
+   "hour": "07:00",
+   "model_eur_mwh": 297.79,
+   "actual_eur_mwh": 275.25,
+   "model_chf_kwh": 0.2747,
+   "actual_chf_kwh": 0.2539,
+   "p10_chf_kwh": 0.246,
+   "p90_chf_kwh": 0.3146,
+   "error_pct": 8.2
+  },
+  {
+   "hour": "08:00",
+   "model_eur_mwh": 302.97,
+   "actual_eur_mwh": 284.05,
+   "model_chf_kwh": 0.2794,
+   "actual_chf_kwh": 0.262,
+   "p10_chf_kwh": 0.2472,
+   "p90_chf_kwh": 0.3266,
+   "error_pct": 6.7
+  },
+  {
+   "hour": "09:00",
+   "model_eur_mwh": 297.25,
+   "actual_eur_mwh": 278.98,
+   "model_chf_kwh": 0.2742,
+   "actual_chf_kwh": 0.2573,
+   "p10_chf_kwh": 0.2455,
+   "p90_chf_kwh": 0.3077,
+   "error_pct": 6.6
+  },
+  {
+   "hour": "10:00",
+   "model_eur_mwh": 297.8,
+   "actual_eur_mwh": 273.84,
+   "model_chf_kwh": 0.2747,
+   "actual_chf_kwh": 0.2526,
+   "p10_chf_kwh": 0.2466,
+   "p90_chf_kwh": 0.3028,
+   "error_pct": 8.8
+  },
+  {
+   "hour": "11:00",
+   "model_eur_mwh": 298.51,
+   "actual_eur_mwh": 278.75,
+   "model_chf_kwh": 0.2753,
+   "actual_chf_kwh": 0.2571,
+   "p10_chf_kwh": 0.2508,
+   "p90_chf_kwh": 0.3043,
+   "error_pct": 7.1
+  },
+  {
+   "hour": "12:00",
+   "model_eur_mwh": 297.24,
+   "actual_eur_mwh": 274.78,
+   "model_chf_kwh": 0.2741,
+   "actual_chf_kwh": 0.2534,
+   "p10_chf_kwh": 0.2505,
+   "p90_chf_kwh": 0.2992,
+   "error_pct": 8.2
+  },
+  {
+   "hour": "13:00",
+   "model_eur_mwh": 299.1,
+   "actual_eur_mwh": 276.27,
+   "model_chf_kwh": 0.2759,
+   "actual_chf_kwh": 0.2548,
+   "p10_chf_kwh": 0.2454,
+   "p90_chf_kwh": 0.3021,
+   "error_pct": 8.3
+  },
+  {
+   "hour": "14:00",
+   "model_eur_mwh": 306.07,
+   "actual_eur_mwh": 277.12,
+   "model_chf_kwh": 0.2823,
+   "actual_chf_kwh": 0.2556,
+   "p10_chf_kwh": 0.2545,
+   "p90_chf_kwh": 0.318,
+   "error_pct": 10.4
+  },
+  {
+   "hour": "15:00",
+   "model_eur_mwh": 327.9,
+   "actual_eur_mwh": 281.01,
+   "model_chf_kwh": 0.3024,
+   "actual_chf_kwh": 0.2592,
+   "p10_chf_kwh": 0.2694,
+   "p90_chf_kwh": 0.3504,
+   "error_pct": 16.7
+  },
+  {
+   "hour": "16:00",
+   "model_eur_mwh": 339.84,
+   "actual_eur_mwh": 278.14,
+   "model_chf_kwh": 0.3134,
+   "actual_chf_kwh": 0.2565,
+   "p10_chf_kwh": 0.2769,
+   "p90_chf_kwh": 0.3611,
+   "error_pct": 22.2
+  },
+  {
+   "hour": "17:00",
+   "model_eur_mwh": 348.6,
+   "actual_eur_mwh": 283.6,
+   "model_chf_kwh": 0.3215,
+   "actual_chf_kwh": 0.2616,
+   "p10_chf_kwh": 0.2853,
+   "p90_chf_kwh": 0.3799,
+   "error_pct": 22.9
+  },
+  {
+   "hour": "18:00",
+   "model_eur_mwh": 339.67,
+   "actual_eur_mwh": 280.87,
+   "model_chf_kwh": 0.3133,
+   "actual_chf_kwh": 0.2591,
+   "p10_chf_kwh": 0.2744,
+   "p90_chf_kwh": 0.3757,
+   "error_pct": 20.9
+  },
+  {
+   "hour": "19:00",
+   "model_eur_mwh": 334.3,
+   "actual_eur_mwh": 276.07,
+   "model_chf_kwh": 0.3083,
+   "actual_chf_kwh": 0.2546,
+   "p10_chf_kwh": 0.2678,
+   "p90_chf_kwh": 0.3665,
+   "error_pct": 21.1
+  },
+  {
+   "hour": "20:00",
+   "model_eur_mwh": 298.44,
+   "actual_eur_mwh": 262.41,
+   "model_chf_kwh": 0.2753,
+   "actual_chf_kwh": 0.242,
+   "p10_chf_kwh": 0.2515,
+   "p90_chf_kwh": 0.3152,
+   "error_pct": 13.7
+  },
+  {
+   "hour": "21:00",
+   "model_eur_mwh": 268.24,
+   "actual_eur_mwh": 247.26,
+   "model_chf_kwh": 0.2474,
+   "actual_chf_kwh": 0.2281,
+   "p10_chf_kwh": 0.2351,
+   "p90_chf_kwh": 0.2723,
+   "error_pct": 8.5
+  },
+  {
+   "hour": "22:00",
+   "model_eur_mwh": 246.61,
+   "actual_eur_mwh": 240.0,
+   "model_chf_kwh": 0.2274,
+   "actual_chf_kwh": 0.2213,
+   "p10_chf_kwh": 0.2156,
+   "p90_chf_kwh": 0.2335,
+   "error_pct": 2.8
+  },
+  {
+   "hour": "23:00",
+   "model_eur_mwh": 225.61,
+   "actual_eur_mwh": 224.5,
+   "model_chf_kwh": 0.2081,
+   "actual_chf_kwh": 0.2071,
+   "p10_chf_kwh": 0.201,
+   "p90_chf_kwh": 0.2258,
+   "error_pct": 0.5
+  }
+ ],
+ "generated_at": "2026-11-25 17:21"
+}
