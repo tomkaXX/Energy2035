@@ -5,6 +5,7 @@
   reservoir  attach Swiss reservoir filling (BFE CSV, else ENTSO-E) to the dataset, no full re-download
   pv         rescale Swiss solar to official installed capacity (data/csv/pv_national.csv)
   hydro      hydro stations (data/csv/hydro_plants.csv) + BFE report data -> hydro_docs.json
+  validate   compare model inputs with BFE monthly electricity statistics (data/csv/bfe_elstat)
   bess       battery list -> scenario BESS GW/GWh, writes outputs/bess_list.csv
   fuel       re-attach daily gas/CO₂ prices (data/csv) to the dataset, no download
   data       download/build the hourly dataset      [--source energy-charts|entsoe|both|synthetic]
@@ -48,7 +49,7 @@ def _venv_hint() -> None:
 def main() -> None:
     _venv_hint()
     ap = argparse.ArgumentParser(prog="pfc2035", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["check", "reservoir-pdf", "reservoir", "pv", "bess", "hydro", "fuel", "data", "train", "chronos", "scenarios", "all", "bundle"])
+    ap.add_argument("command", choices=["check", "reservoir-pdf", "reservoir", "pv", "bess", "hydro", "validate", "fuel", "data", "train", "chronos", "scenarios", "all", "bundle"])
     ap.add_argument("--source", choices=["energy-charts", "entsoe", "both", "synthetic"], default=None,
                     help="override data.source in config/settings.yaml")
     ap.add_argument("--start", default=None)
@@ -92,6 +93,17 @@ def main() -> None:
         report()
         st = load_settings()
         hydro_docs.export([WORK / "outputs", resolve(st["export"].get("react_public_dir"))])
+        return
+
+    if a.command == "validate":
+        from .config import WORK
+        from .data import bfe_elstat, hydro_docs
+        print(bfe_elstat.tidy_year().to_string(index=False))
+        mix = bfe_elstat.energy_mix()
+        print(f"energy mix per month: {len(mix)} rows -> data/csv/bfe_elstat/energy_mix_*.csv")
+        bfe_elstat.check_xlsx()
+        bfe_elstat.validate()
+        hydro_docs.export([WORK / "outputs", resolve(load_settings()["export"].get("react_public_dir"))])
         return
 
     if a.command == "fuel":

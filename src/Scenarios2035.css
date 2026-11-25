@@ -110,3 +110,17 @@ body { padding-bottom: 52px; }
 @media (max-width: 900px) { .data-grid { grid-template-columns: 1fr; } }
 .hbar .hb-val-in { fill: #fff; }
 .data-card.wide > .chart { max-width: 860px; }
+.stack-chart { position: relative; }
+.stack-chart .grid { stroke: var(--border, rgba(0,0,0,.08)); }
+.stack-chart .axis { stroke: var(--text-muted, #999); }
+.stack-chart .tick { font-size: 11px; fill: var(--text-muted, #888); }
+.stack-tip { position: absolute; top: 6px; right: 6px; background: var(--surface-1, #fff); border: 1px solid var(--border, rgba(0,0,0,.15)); border-radius: 8px; padding: 8px 10px; font-size: 12px; min-width: 210px; box-shadow: 0 4px 14px rgba(0,0,0,.1); pointer-events: none; }
+.stack-tip div { display: flex; align-items: center; gap: 6px; }
+.stack-tip div span { margin-left: auto; font-variant-numeric: tabular-nums; }
+.stack-tip i { width: 9px; height: 9px; display: inline-block; border-radius: 2px; }
+.year-pick { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+.year-pick button { font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border, rgba(0,0,0,.15)); background: var(--surface-1, #fff); color: var(--text-primary); cursor: pointer; }
+.year-pick button.on { border-color: var(--text-primary); font-weight: 600; }
+.val-tbl td.ok, .foot .ok { color: #1e7b4e; }
+.val-tbl td.warn, .foot .warn { color: #b07800; }
+.val-tbl td.bad, .foot .bad { color: #c0392b; font-weight: 600; }

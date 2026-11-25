@@ -36,3 +36,11 @@ def export(target_dirs) -> None:
             d.mkdir(parents=True, exist_ok=True)
             (d / name).write_text(txt, encoding="utf-8")
         print(f"{name}: {len(data)} tables from {folder}")
+    from .bfe_elstat import to_json
+    el = to_json()
+    if el:
+        txt = json.dumps(el, ensure_ascii=False).replace("NaN", "null")
+        for d in target_dirs:
+            if d is not None:
+                (d / "bfe_elstat.json").write_text(txt, encoding="utf-8")
+        print(f"bfe_elstat.json: {len(el['monthly'])} months")

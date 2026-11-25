@@ -8,11 +8,76 @@ const v = typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : '';
 const nf = (x, d = 0) => (x == null || Number.isNaN(x) ? '–' : x.toLocaleString('de-CH', { minimumFractionDigits: d, maximumFractionDigits: d }));
 
 const SUBTABS = [
+  ['overview', 'Overview 2026', 'var(--text-primary)'],
   ['nuclear', 'Nuclear', 'var(--series-2)'],
   ['hydro', 'Hydro', 'var(--series-1)'],
   ['pv', 'PV', 'var(--series-4)'],
+  ['wind', 'Wind', 'var(--series-3)'],
+  ['thermal', 'Thermal', '#7a5c3e'],
   ['battery', 'Battery installations', '#1e7b4e'],
 ];
+
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// production categories as in the BFE electricity statistics, coloured like the generation map
+const PROD_CATS = [
+  ['run_of_river_gwh', 'Run-of-river hydro', 'var(--ror-fill)'],
+  ['storage_hydro_gwh', 'Storage hydro', 'var(--series-1)'],
+  ['nuclear_gwh', 'Nuclear', 'var(--series-2)'],
+  ['thermal_gwh', 'Thermal', '#7a5c3e'],
+  ['pv_gwh', 'Photovoltaics', 'var(--series-4)'],
+  ['wind_gwh', 'Wind', 'var(--series-3)'],
+];
+
+/* Stacked monthly columns (production by category) with a consumption line. */
+function StackedMonths({ rows, cats, line, unit = 'GWh' }) {
+  const [hi, setHi] = useState(null);
+  const W = 720, H = 300, m = { l: 48, r: 12, t: 10, b: 26 };
+  const n = 12;
+  const tot = rows.map((r) => cats.reduce((a, [k]) => a + (r[k] || 0), 0));
+  const max = Math.max(...tot, ...rows.map((r) => r[line?.key] || 0)) * 1.08;
+  const step = max > 6000 ? 2000 : 1000;
+  const ticks = Array.from({ length: Math.floor(max / step) + 1 }, (_, i) => i * step);
+  const bw = (W - m.l - m.r) / n;
+  const y = (v) => m.t + (1 - v / max) * (H - m.t - m.b);
+  const r0 = rows.find((r) => r.month === hi);
+  return (
+    <div className="chart stack-chart">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" onMouseLeave={() => setHi(null)}>
+        {ticks.map((t) => <g key={t}><line x1={m.l} x2={W - m.r} y1={y(t)} y2={y(t)} className={t === 0 ? 'axis' : 'grid'} /><text x={m.l - 6} y={y(t) + 4} textAnchor="end" className="tick">{nf(t)}</text></g>)}
+        {MONTHS_EN.map((mn, i) => <text key={mn} x={m.l + bw * i + bw / 2} y={H - 8} textAnchor="middle" className="tick">{mn}</text>)}
+        {rows.map((r) => {
+          let acc = 0;
+          const x0 = m.l + bw * (r.month - 1) + 4;
+          return (
+            <g key={r.month} onMouseEnter={() => setHi(r.month)} opacity={r.final === 0 ? 0.92 : 1}>
+              <rect x={x0 - 4} y={m.t} width={bw} height={H - m.t - m.b} fill="transparent" />
+              {cats.map(([k, , c]) => {
+                const v = r[k] || 0; const yt = y(acc + v), yb = y(acc); acc += v;
+                return <rect key={k} x={x0} y={yt} width={bw - 8} height={Math.max(0, yb - yt - (v > 0 ? 1.5 : 0))} style={{ fill: c, ...(k === 'run_of_river_gwh' ? { stroke: 'var(--ror-line)', strokeDasharray: '3 2', strokeWidth: 1 } : {}) }} />;
+              })}
+            </g>
+          );
+        })}
+        {line && (() => {
+          const pts = rows.map((r) => [m.l + bw * (r.month - 1) + bw / 2, y(r[line.key])]);
+          return <g><polyline points={pts.map((p) => p.join(',')).join(' ')} fill="none" stroke="var(--text-primary)" strokeWidth="2" />
+            {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="4" fill="var(--text-primary)" stroke="var(--surface-1)" strokeWidth="2" />)}</g>;
+        })()}
+      </svg>
+      {r0 && (
+        <div className="stack-tip">
+          <b>{MONTHS_EN[r0.month - 1]} {r0.year}</b>{r0.final === 0 ? ' (provisional)' : ''}
+          {[...cats].reverse().map(([k, l, c]) => <div key={k}><i style={{ background: c }} />{l}<span>{nf(r0[k])} {unit}</span></div>)}
+          {line && <div><i style={{ background: 'var(--text-primary)', borderRadius: '50%' }} />{line.label}<span>{nf(r0[line.key])} {unit}</span></div>}
+        </div>
+      )}
+      <div className="line-legend">
+        {cats.map(([k, l, c]) => <span key={k} className="lg"><i style={{ background: c, ...(k === 'run_of_river_gwh' ? { border: '1.5px dashed var(--ror-line)' } : {}) }} />{l}</span>)}
+        {line && <span className="lg"><i style={{ background: 'var(--text-primary)', borderRadius: '50%' }} />{line.label} (line)</span>}
+      </div>
+    </div>
+  );
+}
 
 // hydro type colours = map colours
 const HC = { ror: 'var(--ror-fill)', storage: 'var(--series-1)', pumped: '#1b4f91', other: 'var(--text-muted)' };
@@ -100,8 +165,54 @@ function Card({ title, sub, children, wide }) {
   );
 }
 
+
+/* Monthly values of one BFE category, one line per year (latest years in colour). */
+const YEAR_PAL = ['var(--series-1)', 'var(--series-3)', 'var(--series-2)', 'var(--text-primary)'];
+function MonthlyByYear({ el, k, title, sub, unit = 'GWh', from = 2021, foot }) {
+  if (!el) return null;
+  const rows = el.monthly.filter((r) => r.year >= from && r[k] != null);
+  const ys = [...new Set(rows.map((r) => r.year))].sort();
+  const col = (i) => (i >= ys.length - YEAR_PAL.length ? YEAR_PAL[i - (ys.length - YEAR_PAL.length)] : 'var(--text-muted)');
+  const dash = (i) => (i >= ys.length - YEAR_PAL.length ? undefined : '4 3');
+  const series = ys.map((y, i) => ({ name: String(y), color: col(i), dash: dash(i),
+    values: Array.from({ length: 12 }, (_, m) => rows.find((r) => r.year === y && r.month === m + 1)?.[k] ?? null) }));
+  const tot = ys.map((y) => [y, rows.filter((r) => r.year === y).reduce((a, r) => a + r[k], 0), rows.filter((r) => r.year === y).length]);
+  return (
+    <Card title={title} sub={sub || `${unit} per month · BFE electricity statistics`}>
+      <LineChart height={220} unit={unit} xLabels={MONTHS_EN} series={series} />
+      <div className="line-legend">
+        {series.map((x) => <span key={x.name} className="lg"><svg width="22" height="8" aria-hidden="true"><line x1="1" x2="21" y1="4" y2="4" stroke={x.color} strokeWidth="2" strokeDasharray={x.dash} /></svg>{x.name}</span>)}
+      </div>
+      <p className="foot">Year totals: {tot.map(([y, t, n]) => `${y} ${nf(t)}${n < 12 ? ` (${n} mo.)` : ''}`).join(' · ')} GWh. {foot}</p>
+    </Card>
+  );
+}
+
+/* Model input (hourly data summed per month) vs BFE statistics for one or more series. */
+function ModelVsBfe({ el, series, title, foot }) {
+  const vm = el?.validation_monthly;
+  if (!vm?.length) return null;
+  const keys = [...new Set(vm.filter((r) => r.series === series[0][0]).map((r) => `${r.year}-${String(r.month).padStart(2, '0')}`))].sort();
+  const get = (sr, key, f) => vm.find((r) => r.series === sr && `${r.year}-${String(r.month).padStart(2, '0')}` === key)?.[f] ?? null;
+  const lines = [{ name: 'BFE statistics', color: 'var(--text-primary)', values: keys.map((kk) => get(series[0][0], kk, 'bfe_gwh')) },
+    ...series.map(([sr, label, c, d]) => ({ name: label, color: c, dash: d, values: keys.map((kk) => get(sr, kk, 'model_gwh')) }))];
+  const ratio = series.map(([sr, label]) => {
+    const r = (el.validation || []).filter((v) => v.series === sr);
+    return `${label}: ${r.map((v) => `${v.year} ${nf(v.ratio, 2)}`).join(', ')}`;
+  });
+  return (
+    <Card title={title || 'Model input vs. BFE statistics'} sub="GWh per month · ratio = model ÷ BFE">
+      <LineChart height={220} unit="GWh" xTickEvery={6} xLabels={keys.map((kk) => kk.slice(2))} series={lines} />
+      <div className="line-legend">
+        {lines.map((x) => <span key={x.name} className="lg"><svg width="22" height="8" aria-hidden="true"><line x1="1" x2="21" y1="4" y2="4" stroke={x.color} strokeWidth="2" strokeDasharray={x.dash} /></svg>{x.name}</span>)}
+      </div>
+      <p className="foot">{ratio.join(' · ')}. {foot}</p>
+    </Card>
+  );
+}
+
 /* ------------------------------- HYDRO ------------------------------- */
-function Hydro({ d, pv, summary, st }) {
+function Hydro({ d, pv, summary, st, el }) {
   if (!d) return <p className="muted">Loading hydro data… (public/pfc2035/hydro_docs.json — run <code>python -m pfc2035 hydro</code>)</p>;
   const fact = Object.fromEntries(d.key_facts.map((k) => [k.key, k]));
   const fleet = d.fleet_bfe_2025;
@@ -124,6 +235,11 @@ function Hydro({ d, pv, summary, st }) {
         <p className="foot">Storage plants deliver power at short notice and shift production from summer to winter, which makes Switzerland a central supplier in the European grid. Valais and Graubünden produce {nf(fact.vs_gr_twh?.value, 1)} TWh — almost half of Swiss hydropower; {fact.rhine_rhone_plants?.value} plants are fed by the Rhine (with Aare, Reuss, Limmat) and the Rhône. Energy Act guide value for 2035: {nf(fact.target_2035?.value / 1000, 1)} TWh/yr.</p>
       </Card>
 
+      <MonthlyByYear el={el} k="run_of_river_gwh" title="Run-of-river production by month" foot="Snow and glacier melt: peak in June–July, low in winter." />
+      <MonthlyByYear el={el} k="storage_hydro_gwh" title="Storage hydro production by month" foot="Includes production from pumped water; high in winter and in wet summers (2024)." />
+      <ModelVsBfe el={el} title="Run-of-river: model input vs. BFE" series={[['ch_ror', 'Model (ENTSO-E run-of-river)', 'var(--ror-fill)']]} foot="Matches within a few percent per year — used as is." />
+      <ModelVsBfe el={el} title="Storage hydro: model input vs. BFE" series={[['ch_reservoir', 'Model (ENTSO-E reservoir)', 'var(--series-1)']]} foot="ENTSO-E reports only about half of BFE storage production (pumped storage and some plants are missing). The model uses it only as a feature with the reservoir filling; candidate for monthly calibration to BFE." />
+
       <Card title="Fleet by plant type · capacity" sub="MW, BFE 2025">
         <HBar unit="MW" rows={fleet.map((f) => ({ label: f.type, values: [f.power_mw], color: typeColor(f.type), style: f.type.startsWith('run') ? rorStyle : undefined }))}
           series={[{ name: 'MW', color: HC.storage }]} labelW={130} />
@@ -136,6 +252,31 @@ function Hydro({ d, pv, summary, st }) {
           series={[{ name: 'GWh/yr', color: HC.storage }]} labelW={130} />
         <p className="foot">Run-of-river and storage each produce ~17.8 TWh/yr; pumped storage is mainly a flexibility source (1.6 TWh/yr net of seasonal pumping not deducted). The PFC explorer now uses 17.8 TWh run-of-river from this table.</p>
       </Card>
+
+      {summary?.reservoir_weekly_twh && Object.keys(summary.reservoir_weekly_twh).length > 0 && (() => {
+        const rw = summary.reservoir_weekly_twh;
+        const ys = Object.keys(rw).sort();
+        const n = Math.max(...ys.map((y) => rw[y].length));
+        // the four most recent years get categorical colours; older years are grey and dashed
+        const pal = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-5)'];
+        const old = Math.max(0, ys.length - pal.length);
+        const last = summary.reservoir_last_date;
+        const series = ys.map((y, i) => ({
+          name: last && last.startsWith(y) ? `${y} (to ${last.slice(8, 10)}.${last.slice(5, 7)}.${last.slice(0, 4)})` : y,
+          color: i < old ? 'var(--text-muted)' : pal[i - old],
+          dash: i < old ? '4 3' : undefined,
+          values: Array.from({ length: n }, (_, k) => rw[y][k] ?? null),
+        }));
+        return (
+          <Card title="Swiss reservoir filling · model input" sub={`weekly (Monday), TWh stored · ${summary.reservoir_source ?? 'BFE'}`} wide>
+            <LineChart xLabels={Array.from({ length: n }, (_, i) => `W${i + 1}`)} xTickEvery={4} unit="TWh" series={series} />
+            <div className="line-legend">{series.map((x) => (
+              <span key={x.name} className="lg"><svg width="22" height="8" aria-hidden="true"><line x1="1" x2="21" y1="4" y2="4" stroke={x.color} strokeWidth="2" strokeDasharray={x.dash} /></svg>{x.name}</span>
+            ))}</div>
+            <p className="foot">Water stored in Swiss dams ("water value"): low filling before winter means storage plants bid higher and winter prices rise. The model uses the filling and its deviation from the average year; for 2035 the weather year's filling is scaled by each scenario's <code>reservoir_factor</code>.</p>
+          </Card>
+        );
+      })()}
 
       {st && (() => {
         const hp = st.electricity_production_1970_2025.filter((r) => r.year >= 1995);
@@ -263,7 +404,7 @@ function Hydro({ d, pv, summary, st }) {
 }
 
 /* ------------------------------- NUCLEAR ------------------------------- */
-function Nuclear({ st }) {
+function Nuclear({ st, el }) {
   const n = PLANTS.filter((p) => p.type === 'nuclear').sort((a, b) => b.mw - a.mw);
   const on = n.filter((p) => !p.offline || p.offline > 2026);
   if (!st) return <p className="muted">Loading… (public/pfc2035/energy_stats.json — run <code>python -m pfc2035 hydro</code>)</p>;
@@ -331,6 +472,9 @@ function Nuclear({ st }) {
         <p className="foot">Orange = net import, blue = net export. Imports in years with low nuclear or hydro output (2016–17, 2021–22); record export of 14.4 TWh in wet 2024; 2025 balanced.</p>
       </Card>
 
+      <MonthlyByYear el={el} k="nuclear_gwh" title="Nuclear production by month" foot="Dips are refuelling outages (usually May–September) and unplanned outages (e.g. ~1 GW offline from June 2025 to March 2026)." />
+      <ModelVsBfe el={el} title="Nuclear: model input vs. BFE" series={[['ch_nuclear', 'Model (ENTSO-E nuclear)', 'var(--series-2)']]} foot="Matches within 0–2 % — the hourly nuclear input is reliable." />
+
       <Card title="Swiss nuclear fleet" sub="net MW">
         <HBar unit="MW" labelW={110} rows={n.map((p) => ({ label: p.name, values: [p.mw], color: p.offline && p.offline <= 2026 ? 'var(--text-muted)' : 'var(--series-2)' }))} series={[{ name: 'MW', color: 'var(--series-2)' }]} />
       </Card>
@@ -363,7 +507,7 @@ function Nuclear({ st }) {
 }
 
 /* ------------------------------- PV ------------------------------- */
-function Pv({ pv, st }) {
+function Pv({ pv, st, el }) {
   if (!pv) return <p className="muted">Loading…</p>;
   const pvp = (st?.electricity_production_1970_2025 || []).filter((r) => r.year >= 2010);
   const c = [...(pv.cantons || [])].sort((a, b) => b.capacity_mw - a.capacity_mw).slice(0, 12);
@@ -379,11 +523,13 @@ function Pv({ pv, st }) {
       </Card>
       {pvp.length > 0 && (
         <Card title="Solar and wind production, 2010–2025" sub="GWh · BFE Gesamtenergiestatistik 2025 Tab. 24" wide>
-          <HBar unit="GWh" labelW={50} rows={pvp.map((r) => ({ label: String(r.year), values: [r.pv_gwh, r.wind_gwh] }))}
+          <HBar unit="GWh" labelW={60} width={1240} rows={pvp.map((r) => ({ label: String(r.year), values: [r.pv_gwh, r.wind_gwh] }))}
             series={[{ name: 'Photovoltaics', color: 'var(--series-4)' }, { name: 'Wind', color: 'var(--series-3)' }]} />
           <p className="foot">PV grew from 94 GWh (2010) to 7,948 GWh (2025) — 11.8 % of Swiss production; wind stays at ~0.16 TWh.</p>
         </Card>
       )}
+      <MonthlyByYear el={el} k="pv_gwh" title="PV production by month" foot="Summer months are 5–10 times winter months; annual PV output grew by 20–37 % per year since 2021." />
+      <ModelVsBfe el={el} title="PV: model input vs. BFE" series={[['ch_solar', 'Model (corrected PV)', 'var(--series-4)'], ['ch_solar_entsoe', 'Raw ENTSO-E PV', 'var(--text-muted)', '4 3']]} foot="Raw ENTSO-E PV is 28–36 % too low; our capacity-based correction overshoots by 6–16 % — a monthly calibration to BFE would remove both errors." />
       <Card title="Largest cantons by capacity" sub="MW">
         <HBar unit="MW" labelW={60} rows={c.map((x) => ({ label: x.canton_code, values: [x.capacity_mw] }))} series={[{ name: 'MW', color: 'var(--series-4)' }]} />
       </Card>
@@ -420,13 +566,183 @@ function Battery({ pv }) {
   );
 }
 
+/* ------------------------------- OVERVIEW 2026 ------------------------------- */
+const SERIES_LABEL = { ch_ror: 'Run-of-river', ch_reservoir: 'Storage hydro (ENTSO-E)', ch_nuclear: 'Nuclear', ch_solar: 'PV (model, corrected)', ch_solar_entsoe: 'PV (raw ENTSO-E)', ch_wind: 'Wind', ch_load: 'Consumption', ch_pump: 'Pumping (ENTSO-E)' };
+function Overview({ el }) {
+  const [yr, setYr] = useState(null);
+  if (!el) return <p className="muted">Loading… (public/pfc2035/bfe_elstat.json — run <code>python -m pfc2035 validate</code>)</p>;
+  const years = [...new Set(el.monthly.map((r) => r.year))].filter((y) => y >= 2020).sort();
+  const year = yr ?? years[years.length - 1];
+  const rows = el.monthly.filter((r) => r.year === year);
+  const sum = (k) => rows.reduce((a, r) => a + (r[k] || 0), 0);
+  const prov = rows.some((r) => r.final === 0);
+  const val = el.validation || [];
+  const vYears = [...new Set(val.map((v) => v.year))].sort();
+  const vSeries = [...new Set(val.map((v) => v.series))];
+  return (
+    <div className="data-grid">
+      <Card title={`Electricity production by month, ${year}`} sub={`GWh · BFE electricity statistics${prov ? ' · provisional' : ''}`} wide>
+        <div className="year-pick">
+          {years.map((y) => <button key={y} type="button" className={y === year ? 'on' : ''} onClick={() => setYr(y)}>{y}</button>)}
+        </div>
+        <StackedMonths rows={rows} cats={PROD_CATS} line={{ key: 'national_consumption_gwh', label: 'National consumption' }} />
+        <Kpis items={[
+          { value: `${nf(sum('production_gwh') / 1000, 1)} TWh`, label: `production (${rows.length} months)` },
+          { value: `${nf(sum('national_consumption_gwh') / 1000, 1)} TWh`, label: 'national consumption' },
+          { value: `${nf(sum('net_import_gwh') / 1000, 1)} TWh`, label: 'net import (+) / export (−)' },
+          { value: `${nf((100 * sum('nuclear_gwh')) / sum('production_gwh'), 1)} %`, label: 'nuclear share' },
+          { value: `${nf((100 * sum('pv_gwh')) / sum('production_gwh'), 1)} %`, label: 'PV share' },
+          { value: `${nf(sum('pumping_gwh') / 1000, 1)} TWh`, label: 'pumping consumption' },
+        ]} />
+        <p className="foot">Same categories and data as the BFE electricity-statistics chart (opendata.swiss «Elektrizitätsbilanz der Schweiz – Monatswerte»). Winter months need imports; from April PV and run-of-river turn Switzerland into an exporter. Data: data/csv/bfe_elstat (2026: bfe_monthly_2026.csv).</p>
+      </Card>
+
+      {val.length > 0 && (
+        <Card title="Validation: model input vs. BFE statistics" sub="ratio of annual sums (1.00 = identical) · outputs/validation_bfe_monthly.csv" wide>
+          <table className="tbl pv-tbl val-tbl">
+            <thead><tr><th>Model series</th>{vYears.map((y) => <th key={y} className="num">{y}</th>)}</tr></thead>
+            <tbody>
+              {vSeries.map((sr) => (
+                <tr key={sr}><td>{SERIES_LABEL[sr] || sr}</td>
+                  {vYears.map((y) => {
+                    const v = val.find((x) => x.series === sr && x.year === y);
+                    const r = v?.ratio;
+                    const cls = r == null ? '' : Math.abs(r - 1) <= 0.05 ? 'ok' : Math.abs(r - 1) <= 0.2 ? 'warn' : 'bad';
+                    return <td key={y} className={`num ${cls}`}>{r == null ? '–' : nf(r, 2)}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="foot"><span className="ok">●</span> within ±5 % <span className="warn">▲</span> ±5–20 % <span className="bad">◆</span> more than 20 % off. Nuclear, run-of-river and consumption match; ENTSO-E storage hydro covers only ~half of BFE storage production, pumping is missing in ENTSO-E, and our PV correction is 6–16 % too high — candidates for a monthly calibration to BFE.</p>
+        </Card>
+      )}
+
+      {el.weekly?.length > 0 && (() => {
+        const w = el.weekly;
+        return (
+          <Card title="Weekly statistic: a Wednesday per week, 2025–2026" sub="GWh per day · BFE «Wochenstatistik»" wide>
+            <LineChart height={220} unit="GWh/day" xTickEvery={8} xLabels={w.map((r) => r.Datum.slice(2))}
+              series={[
+                { name: 'Consumption', color: 'var(--text-primary)', values: w.map((r) => r.Landesverbrauch_GWh) },
+                { name: 'Storage hydro', color: 'var(--series-1)', values: w.map((r) => r.Erzeugung_speicherwerk_GWh) },
+                { name: 'Nuclear', color: 'var(--series-2)', values: w.map((r) => r.Erzeugung_kernkraftwerk_GWh) },
+                { name: 'Run-of-river', color: 'var(--ror-fill)', values: w.map((r) => r.Erzeugung_laufwerk_GWh) },
+                { name: 'Photovoltaics', color: 'var(--series-4)', values: w.map((r) => r.Erzeugung_photovoltaik_GWh) },
+                { name: 'Thermal', color: '#7a5c3e', values: w.map((r) => r.Erzeugung_thermisch_GWh) },
+              ]} />
+            <div className="line-legend">
+              {[['Consumption', 'var(--text-primary)'], ['Storage hydro', 'var(--series-1)'], ['Nuclear', 'var(--series-2)'], ['Run-of-river', 'var(--ror-fill)'], ['Photovoltaics', 'var(--series-4)'], ['Thermal', '#7a5c3e']].map(([n, c]) => <span key={n} className="lg"><i style={{ background: c }} />{n}</span>)}
+            </div>
+            <p className="foot">Weekly data end on {w[w.length - 1].Datum.split('-').reverse().join('.')}. Steps in nuclear output show revisions and outages: from ~71 GWh/day in early 2025 to ~46 GWh/day from June 2025 (about 1 GW offline) and back to ~62 GWh/day from April 2026.</p>
+          </Card>
+        );
+      })()}
+    </div>
+  );
+}
+
+/* ------------------------------- WIND ------------------------------- */
+function Wind({ st, el, summary }) {
+  if (!st) return <p className="muted">Loading…</p>;
+  const a = st.electricity_production_1970_2025.filter((r) => r.year >= 2005);
+  const last = a[a.length - 1];
+  const mm = el ? el.monthly.filter((r) => r.year >= 2020 && r.wind_gwh != null) : [];
+  const winter = mm.filter((r) => [1, 2, 3, 10, 11, 12].includes(r.month)).reduce((s2, r) => s2 + r.wind_gwh, 0);
+  const all = mm.reduce((s2, r) => s2 + r.wind_gwh, 0);
+  const sc = summary?.scenarios || {};
+  const scw = Object.entries(sc).map(([id, x]) => [x.short || x.name || id, x.params?.ch?.wind_twh]).filter(([, w]) => w != null);
+  return (
+    <div className="data-grid">
+      <Card title="Wind power in Switzerland" sub="BFE Gesamtenergiestatistik 2025 · electricity statistics" wide>
+        <Kpis items={[
+          { value: `${nf(last.wind_gwh)} GWh`, label: `wind production ${last.year}` },
+          { value: `${nf((100 * last.wind_gwh) / last.production_gwh, 2)} %`, label: 'of electricity production' },
+          { value: `${nf(Math.max(...a.map((r) => r.wind_gwh)))} GWh`, label: 'best year so far' },
+          { value: `${nf((100 * winter) / (all || 1))} %`, label: 'of wind output in winter (Oct–Mar, 2020–26)' },
+          ...scw.map(([n, w]) => ({ value: `${nf(w, 1)} TWh`, label: `2035 assumption · ${n}` })),
+        ]} />
+        <p className="foot">Swiss wind is small (≈ 0.15–0.17 TWh/yr, about 0.25 % of production) but about 60 % of it comes in the winter half-year, when Switzerland imports — the reason the Energy Act and the 2035 scenarios count on more wind.</p>
+      </Card>
+      <Card title="Wind production, 2005–2025" sub="GWh · Tab. 24">
+        <HBar unit="GWh" labelW={50} rows={a.map((r) => ({ label: String(r.year), values: [r.wind_gwh] }))} series={[{ name: 'GWh', color: 'var(--series-3)' }]} />
+      </Card>
+      <MonthlyByYear el={el} k="wind_gwh" title="Wind production by month" from={2020} foot="Strongest from October to March (storms); summers are calm." />
+      <ModelVsBfe el={el} title="Wind: model input vs. BFE" series={[['ch_wind', 'Model (ENTSO-E wind)', 'var(--series-3)']]} foot="Annual ratio 0.83–1.16; single months differ more because small totals amplify rounding — acceptable given the tiny share." />
+      <Card title="What this means for the 2035 price model" wide>
+        <ul className="implications">
+          <li><b>Winter value.</b> Each TWh of wind delivers ~0.6 TWh in winter (October–March) — more valuable for the winter gap than the same TWh of PV.</li>
+          <li><b>Scenario lever.</b> Wind is scaled from the hourly weather-year profile to the scenario target (BAU 0.6, Transition 1.5, Delayed 0.3 TWh). Even 1.5 TWh is ~2 % of demand, so its price effect is small next to nuclear, hydro and imports.</li>
+          <li><b>Neighbours matter more.</b> German and French wind (in the model via their residual load) moves Swiss prices far more than Swiss wind.</li>
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+/* ------------------------------- THERMAL ------------------------------- */
+function Thermal({ st, el }) {
+  if (!st) return <p className="muted">Loading…</p>;
+  const a = st.electricity_production_1970_2025.filter((r) => r.year >= 1995);
+  const last = a[a.length - 1];
+  const mt = el ? el.monthly.filter((r) => r.year >= 2020 && r.thermal_gwh != null) : [];
+  const ys = [...new Set(mt.map((r) => r.year))].sort();
+  const pal = ['var(--text-muted)', 'var(--text-muted)', 'var(--text-muted)', 'var(--series-1)', 'var(--series-3)', 'var(--series-2)', '#7a5c3e'];
+  return (
+    <div className="data-grid">
+      <Card title="Thermal power plants in Switzerland" sub="BFE Gesamtenergiestatistik 2025 · electricity statistics" wide>
+        <Kpis items={[
+          { value: `${nf(last.thermal_gwh / 1000, 2)} TWh`, label: `conventional thermal & CHP ${last.year}` },
+          { value: `${nf(last.thermal_pct, 1)} %`, label: 'of electricity production' },
+          { value: `${nf(last.thermal_renewable_gwh / 1000, 2)} TWh`, label: 'of which renewable (waste incineration)' },
+          { value: `${nf((last.wood_gwh + last.biogas_gwh) / 1000, 2)} TWh`, label: 'wood & biogas plants' },
+          (() => { const pk = a.reduce((b, r) => (r.thermal_gwh > b.thermal_gwh ? r : b), a[0]); return { value: `${nf(pk.thermal_gwh / 1000, 2)} TWh`, label: `peak (${pk.year})` }; })(),
+        ]} />
+        <p className="foot">Thermal plants are mainly waste-incineration plants, industrial and district-heating CHP and small gas units; there are no large gas power stations in operation. Their output is steady (≈ 0.25–0.4 TWh per month, higher in winter when heat demand runs CHP).</p>
+      </Card>
+      <Card title="Thermal production, 1995–2025" sub="GWh · Tab. 24">
+        <LineChart height={220} unit="GWh" xTickEvery={5} xLabels={a.map((r) => String(r.year))}
+          series={[
+            { name: 'Conventional thermal & CHP', color: '#7a5c3e', values: a.map((r) => r.thermal_gwh) },
+            { name: 'of which renewable (waste)', color: 'var(--series-3)', values: a.map((r) => r.thermal_renewable_gwh) },
+            { name: 'Wood & biogas plants', color: 'var(--series-4)', values: a.map((r) => (r.wood_gwh ?? 0) + (r.biogas_gwh ?? 0)) },
+          ]} />
+        <div className="line-legend">
+          {[['Conventional thermal & CHP', '#7a5c3e'], ['of which renewable (waste)', 'var(--series-3)'], ['Wood & biogas plants', 'var(--series-4)']].map(([n, c]) => <span key={n} className="lg"><i style={{ background: c }} />{n}</span>)}
+        </div>
+        <p className="foot">In the BFE energy balance wood and biogas plants count as “diverse renewables”; the monthly electricity statistics include them in “thermal”.</p>
+      </Card>
+      {mt.length > 0 && (
+        <Card title="Thermal production by month" sub="GWh · BFE monthly balance">
+          <LineChart height={220} unit="GWh" xLabels={MONTHS_EN}
+            series={ys.map((y, i) => ({ name: String(y), color: pal[Math.max(0, pal.length - ys.length + i)], dash: i < ys.length - 4 ? '4 3' : undefined,
+              values: Array.from({ length: 12 }, (_, k) => mt.find((r) => r.year === y && r.month === k + 1)?.thermal_gwh ?? null) }))} />
+          <div className="line-legend">
+            {ys.map((y, i) => <span key={y} className="lg"><svg width="22" height="8" aria-hidden="true"><line x1="1" x2="21" y1="4" y2="4" stroke={pal[Math.max(0, pal.length - ys.length + i)]} strokeWidth="2" strokeDasharray={i < ys.length - 4 ? '4 3' : undefined} /></svg>{y}</span>)}
+          </div>
+          <p className="foot">Monthly thermal output is reported separately since 2020 (before: “other generation”). Winter months are roughly 20–50 % higher than summer (heat-led CHP and waste incineration). Monthly “thermal” includes wood and biogas plants: 2025 = 2,469 + 624 + 456 = 3,549 GWh.</p>
+        </Card>
+      )}
+      <Card title="What this means for the 2035 price model" wide>
+        <ul className="implications">
+          <li><b>Small, must-run baseload.</b> ~2.5 TWh/yr conventional thermal (3.7 % of production), ~3.5 TWh including wood and biogas, runs mostly heat-led; in the model it is part of the residual load history and is held constant in 2035.</li>
+          <li><b>No gas price setter in Switzerland.</b> The marginal gas plant that sets winter prices sits in Germany, France or Italy — which is why the model uses the gas SRMC and neighbours’ residual loads rather than Swiss thermal capacity.</li>
+          <li><b>Reserve plants.</b> Winter reserve gas plants (e.g. Birr) are only dispatched in emergencies and are not part of the market price formation.</li>
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
 export default function DataTab() {
   const [sub, setSub] = useState('hydro');
   const [hydro, setHydro] = useState(null);
   const [pv, setPv] = useState(null);
   const [summary, setSummary] = useState(null);
   const [stats, setStats] = useState(null);
+  const [el, setEl] = useState(null);
   useEffect(() => {
+    fetch(`${DATA_URL}bfe_elstat.json?v=${v}`).then((r) => (r.ok ? r.json() : null)).then(setEl).catch(() => setEl(null));
     fetch(`${DATA_URL}energy_stats.json?v=${v}`).then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => setStats(null));
     fetch(`${DATA_URL}hydro_docs.json?v=${v}`).then((r) => (r.ok ? r.json() : null)).then(setHydro).catch(() => setHydro(null));
     fetch(`${DATA_URL}pv_map.json?v=${v}`).then((r) => (r.ok ? r.json() : null)).then(setPv).catch(() => setPv(null));
@@ -447,10 +763,13 @@ export default function DataTab() {
           </button>
         ))}
       </nav>
-      {sub === 'hydro' && <Hydro d={hydro} pv={pv} summary={summary} st={stats} />}
-      {sub === 'nuclear' && <Nuclear st={stats} />}
-      {sub === 'pv' && <Pv pv={pv} st={stats} />}
+      {sub === 'hydro' && <Hydro d={hydro} pv={pv} summary={summary} st={stats} el={el} />}
+      {sub === 'nuclear' && <Nuclear st={stats} el={el} />}
+      {sub === 'pv' && <Pv pv={pv} st={stats} el={el} />}
       {sub === 'battery' && <Battery pv={pv} />}
+      {sub === 'overview' && <Overview el={el} />}
+      {sub === 'thermal' && <Thermal st={stats} el={el} />}
+      {sub === 'wind' && <Wind st={stats} el={el} summary={summary} />}
     </div>
   );
 }

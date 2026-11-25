@@ -15,7 +15,11 @@ export default function PvPanel() {
   const [pv, setPv] = useState(null);
   const [allBess, setAllBess] = useState(false);
   const [allHydro, setAllHydro] = useState(false);
+  const [el, setEl] = useState(null);   // BFE monthly electricity statistics (bfe_elstat.json)
+  const [st, setSt] = useState(null);   // BFE Gesamtenergiestatistik tables (energy_stats.json)
   useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}pfc2035/bfe_elstat.json?v=${__BUILD_ID__}`).then((r) => (r.ok ? r.json() : null)).then(setEl).catch(() => setEl(null));
+    fetch(`${import.meta.env.BASE_URL}pfc2035/energy_stats.json?v=${__BUILD_ID__}`).then((r) => (r.ok ? r.json() : null)).then(setSt).catch(() => setSt(null));
     fetch(`${import.meta.env.BASE_URL}pfc2035/pv_map.json?v=${__BUILD_ID__}`).then((r) => (r.ok ? r.json() : null)).then(setPv).catch(() => setPv(null));
   }, []);
   if (!pv) return null;
@@ -68,7 +72,7 @@ export default function PvPanel() {
         const shown = allBess ? fac : fac.slice(0, 8);
         return (
           <Section title="Battery installations" color={BESS_STATUS.operational.color}
-            summary={srf.length ? `${n0(srf.filter((x) => x.online_by <= 2026).reduce((a, x) => a + x.energy_mwh, 0))} MWh 2026 · ${n0(srf.reduce((a, x) => a + x.energy_mwh, 0))} MWh 2030` : `${n1(tot.mw / 1000)} GW pipeline`}>
+            summary={srf.length ? `${n0(srf.reduce((a, x) => a + x.energy_mwh, 0))} MWh by 2030` : `${n1(tot.mw / 1000)} GW pipeline`}>
             {srf.length > 0 && (() => {
               const mx = Math.max(...srf.map((x) => x.energy_mwh));
               return (
@@ -124,6 +128,41 @@ export default function PvPanel() {
         );
       })()}
 
+      {/* ---------------- Wind & thermal (BFE monthly statistics) ---------------- */}
+      {el?.monthly?.length > 0 && (() => {
+        const mo = el.monthly;
+        const ly = Math.max(...mo.map((r) => r.year));
+        const cur = mo.filter((r) => r.year === ly);
+        const prev = mo.filter((r) => r.year === ly - 1);
+        const nM = cur.length;
+        const sumK = (rows, k, n = 12) => rows.filter((r) => r.month <= n).reduce((a, r) => a + (r[k] || 0), 0);
+        const ann = st?.electricity_production_1970_2025 || [];
+        const lastA = ann[ann.length - 1];
+        const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const table = (k) => (
+          <table className="tbl pv-tbl">
+            <thead><tr><th>Month</th><th className="num">{ly - 1}</th><th className="num">{ly}{cur.some((r) => r.final === 0) ? ' *' : ''}</th></tr></thead>
+            <tbody>
+              {MON.map((m, i) => {
+                const a = prev.find((r) => r.month === i + 1)?.[k];
+                const b = cur.find((r) => r.month === i + 1)?.[k];
+                return <tr key={m}><td>{m}</td><td className="num">{n0(a)} GWh</td><td className="num">{b == null ? '–' : `${n0(b)} GWh`}</td></tr>;
+              })}
+              <tr><td><b>Jan–{MON[nM - 1]}</b></td><td className="num"><b>{n0(sumK(prev, k, nM))} GWh</b></td><td className="num"><b>{n0(sumK(cur, k, nM))} GWh</b></td></tr>
+            </tbody>
+          </table>
+        );
+        return <>
+          <Section title="Wind power" color="var(--series-3)" summary={`${n0(sumK(prev, 'wind_gwh'))} GWh in ${ly - 1}`}>
+            {table('wind_gwh')}
+            <p className="foot">BFE electricity statistics (monthly, * provisional). {lastA ? `${lastA.year}: ${n0(lastA.wind_gwh)} GWh = ${n2((100 * lastA.wind_gwh) / lastA.production_gwh)} % of production. ` : ''}About 60 % of Swiss wind comes in October–March. No wind layer on the map (no site list yet) — details in Data → Wind.</p>
+          </Section>
+          <Section title="Thermal power plants" color="#7a5c3e" summary={`${n0(sumK(prev, 'thermal_gwh'))} GWh in ${ly - 1}`}>
+            {table('thermal_gwh')}
+            <p className="foot">Waste incineration, industrial and district-heating CHP, wood and biogas plants; heat-led, higher in winter. {lastA ? `Energy statistics ${lastA.year}: conventional thermal ${n0(lastA.thermal_gwh)} GWh (${n1(lastA.thermal_pct)} %), of which ${n0(lastA.thermal_renewable_gwh)} GWh renewable. ` : ''}Details in Data → Thermal.</p>
+          </Section>
+        </>;
+      })()}
       {/* ---------------- Hydro ---------------- */}
       {h && (
         <Section title="Hydro storage & pumped storage" color="var(--series-1)" summary={`${n1(h.total_pct)} % full · ${dmy(h.date)}`}>

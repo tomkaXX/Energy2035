@@ -533,35 +533,6 @@ export default function Scenarios2035({ view = 'scenarios' }) {
         <p className="foot">{bt.note} Chronos answers "what will tomorrow look like?"; only the fundamentals model can answer "what if PV doubles?", which is why it drives the 2035 scenarios.</p>
       </section>
 
-      {summary.reservoir_weekly_twh && Object.keys(summary.reservoir_weekly_twh).length > 0 && (
-        <section className="panel">
-          <div className="panel-h"><h2>Swiss reservoir filling · model input</h2><span className="muted">weekly (Monday), TWh stored · {summary.reservoir_source ?? 'BFE'}</span></div>
-          {(() => {
-            const rw = summary.reservoir_weekly_twh;
-            const ys = Object.keys(rw).sort();
-            const n = Math.max(...ys.map((y) => rw[y].length));
-            // the four most recent years get categorical colours (2023 blue, 2024 orange, 2025 aqua, 2026 magenta);
-            // older years are grey and dashed
-            const pal = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-5)'];
-            const old = Math.max(0, ys.length - pal.length);
-            const last = summary.reservoir_last_date;
-            const series = ys.map((y, i) => ({
-              name: last && last.startsWith(y) ? `${y} (to ${last.slice(8, 10)}.${last.slice(5, 7)}.${last.slice(0, 4)})` : y,
-              color: i < old ? 'var(--text-muted)' : pal[i - old],
-              dash: i < old ? '4 3' : undefined,
-              values: Array.from({ length: n }, (_, k) => rw[y][k] ?? null),
-            }));
-            return <>
-              <LineChart xLabels={Array.from({ length: n }, (_, i) => `W${i + 1}`)} xTickEvery={4} unit="TWh" series={series} />
-              <div className="line-legend">{series.map((x) => (
-                <span key={x.name} className="lg"><svg width="22" height="8" aria-hidden="true"><line x1="1" x2="21" y1="4" y2="4" stroke={x.color} strokeWidth="2" strokeDasharray={x.dash} /></svg>{x.name}</span>
-              ))}</div>
-            </>;
-          })()}
-          <p className="foot">Water stored in Swiss dams ("water value"): low filling before winter means storage plants bid higher and winter prices rise. The model uses the filling and its deviation from the average year; for 2035 the weather year's filling is scaled by each scenario's <code>reservoir_factor</code>.</p>
-        </section>
-      )}
-
       <section className="panel notes">
         <h2>Method in five steps</h2>
         <ol>
